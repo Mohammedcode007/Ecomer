@@ -1,0 +1,14 @@
+# Node modules
+node_modules/
+
+# ملفات البيئة
+.env
+
+# ملفات التشغيل المؤقتة
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# مجلدات البناء
+dist/
+build/
