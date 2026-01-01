@@ -168,3 +168,86 @@ exports.resetPassword = async (req, res, next) => {
     next(error);
   }
 };
+
+// تعديل بيانات المستخدم اعتماداً على التوكن
+exports.updateUser = async (req, res, next) => {
+  try {
+    const { name, email, phone, role } = req.body;
+
+    const user = req.user; // هنا نستخدم req.user بعد middleware
+    if (!user) {
+      res.status(404);
+      throw new Error("المستخدم غير موجود");
+    }
+
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) throw new Error("البريد الإلكتروني مستخدم بالفعل");
+      user.email = email;
+    }
+
+    if (phone && phone !== user.phone) {
+      const phoneExists = await User.findOne({ phone });
+      if (phoneExists) throw new Error("رقم الهاتف مستخدم بالفعل");
+      user.phone = phone;
+    }
+
+    if (name) user.name = name;
+    if (role) user.role = role;
+
+    await user.save();
+
+    res.json({
+      message: "تم تعديل بيانات المستخدم بنجاح",
+      user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// حذف المستخدم اعتماداً على التوكن
+exports.deleteUser = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      res.status(404);
+      throw new Error("المستخدم غير موجود");
+    }
+
+    await Wishlist.findOneAndDelete({ user: user._id });
+    await Cart.findOneAndDelete({ user: user._id });
+    await user.remove();
+
+    res.json({ message: "تم حذف المستخدم بنجاح" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// جلب كل المستخدمين مع Pagination
+exports.getUsers = async (req, res, next) => {
+  try {
+    // عدد المستخدمين لكل صفحة (default 10)
+    const pageSize = parseInt(req.query.limit) || 10;
+    // الصفحة الحالية (default 1)
+    const page = parseInt(req.query.page) || 1;
+
+    const totalUsers = await User.countDocuments(); // عدد جميع المستخدمين
+
+    const users = await User.find()
+      .select("-password") // لا نرسل كلمة المرور
+      .skip(pageSize * (page - 1))
+      .limit(pageSize)
+      .sort({ createdAt: -1 }); // ترتيب حسب الأحدث
+
+    res.json({
+      users,
+      page,
+      pages: Math.ceil(totalUsers / pageSize),
+      total: totalUsers
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -42,6 +42,7 @@ import BlankLayout from 'src/@core/layouts/BlankLayout'
 // ** Demo Imports
 import FooterIllustrationsV2 from 'src/views/pages/auth/FooterIllustrationsV2'
 import { useDispatch, useSelector } from 'react-redux'
+import { AppDispatch, RootState } from 'src/store'
 import { useRouter } from 'next/router'
 import { loginUser } from 'src/store/auth/authSlice'
 
@@ -88,14 +89,9 @@ const schema = yup.object().shape({
   password: yup.string().min(5).required()
 })
 
-// const defaultValues = {
-//   password: 'admin',
-//   email: 'admin@vuexy.com'
-// }
-
 const defaultValues = {
-  email: '',
-  password: ''
+  password: 'admin',
+  email: 'admin@vuexy.com'
 }
 
 interface FormData {
@@ -113,10 +109,6 @@ const LoginPage = () => {
   const bgColors = useBgColor()
   const { settings } = useSettings()
   const hidden = useMediaQuery(theme.breakpoints.down('md'))
-const dispatch = useDispatch()
-const router = useRouter()
-
-const { loading } = useSelector((state: any) => state.auth)
 
   // ** Vars
   const { skin } = settings
@@ -132,6 +124,10 @@ const { loading } = useSelector((state: any) => state.auth)
     resolver: yupResolver(schema)
   })
 
+  const dispatch = useDispatch<AppDispatch>()
+const router = useRouter()
+
+const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth)
   // const onSubmit = (data: FormData) => {
   //   const { email, password } = data
   //   auth.login({ email, password, rememberMe }, () => {
@@ -141,24 +137,44 @@ const { loading } = useSelector((state: any) => state.auth)
   //     })
   //   })
   // }
-const onSubmit = async (data: FormData) => {
-  const { email, password } = data
+
+  const onSubmit = async (formData: FormData) => {
+  // استخدم القيم التي أدخلها المستخدم، وإذا لم يغيّر شيء استخدم الافتراضية
+  const loginData = {
+    email: formData.email || defaultValues.email,
+    password: formData.password || defaultValues.password
+  }
 
   try {
-    await dispatch(
-      loginUser({ email, password }) as any
-    ).unwrap()
+    // محاولة تسجيل الدخول عبر Redux
+    const resultAction = await dispatch(loginUser(loginData))
 
-    // ✅ نجاح تسجيل الدخول
-    router.push('/dashboard')
-  } catch (error: any) {
-    // ❌ فشل تسجيل الدخول أو خطأ من السيرفر
+    if (loginUser.fulfilled.match(resultAction)) {
+      // تسجيل الدخول عبر Redux ناجح، الآن استخدم auth.login لتحديث السياق المحلي
+      auth.login(
+        { email: 'admin@vuexy.com', password: 'admin', rememberMe },
+        () => {
+          // إذا فشل auth.login (نادراً، لكنه موجود)
+          setError('email', {
+            type: 'manual',
+            message: 'Email or Password is invalid'
+          })
+        }
+      )
+
+      // الانتقال بعد النجاح
+      router.push('/')
+    } else {
+      // فشل تسجيل الدخول عبر Redux
+      setError('email', {
+        type: 'manual',
+        message: resultAction.payload || 'Email or Password is invalid'
+      })
+    }
+  } catch (err) {
     setError('email', {
       type: 'manual',
-      message:
-        typeof error === 'string'
-          ? error
-          : 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+      message: 'حدث خطأ أثناء تسجيل الدخول'
     })
   }
 }
@@ -312,16 +328,9 @@ const onSubmit = async (data: FormData) => {
                   Forgot Password?
                 </Typography>
               </Box>
-              <Button
-  fullWidth
-  type="submit"
-  variant="contained"
-  disabled={loading}
-  sx={{ mb: 4 }}
->
-  {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
-</Button>
-
+              <Button fullWidth type='submit' variant='contained' sx={{ mb: 4 }}>
+                Login
+              </Button>
               <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
                 <Typography sx={{ color: 'text.secondary', mr: 2 }}>New on our platform?</Typography>
                 <Typography href='/register' component={LinkStyled}>

@@ -9,6 +9,7 @@ import invoice from 'src/store/apps/invoice'
 import calendar from 'src/store/apps/calendar'
 import permissions from 'src/store/apps/permissions'
 import authReducer from './auth/authSlice'
+import usersReducer from './users/usersSlice'
 
 export const store = configureStore({
   reducer: {
@@ -18,7 +19,9 @@ export const store = configureStore({
     invoice,
     calendar,
     permissions,
-        auth: authReducer
+        auth: authReducer,
+            users: usersReducer
+
 
   },
   middleware: getDefaultMiddleware =>
