@@ -9,6 +9,7 @@ import { styled } from '@mui/material/styles'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
 import Box, { BoxProps } from '@mui/material/Box'
+import { createUser } from 'src/store/users/usersSlice'
 
 // ** Custom Component Import
 import CustomTextField from 'src/@core/components/mui/text-field'
@@ -38,12 +39,10 @@ interface SidebarAddUserType {
 
 interface UserData {
   email: string
-  company: string
-  billing: string
-  country: string
-  contact: number
-  fullName: string
-  username: string
+  phone: string
+  name: string
+  password: string
+
 }
 
 const showErrors = (field: string, valueLen: number, min: number) => {
@@ -64,85 +63,85 @@ const Header = styled(Box)<BoxProps>(({ theme }) => ({
 }))
 
 const schema = yup.object().shape({
-  company: yup.string().required(),
-  billing: yup.string().required(),
-  country: yup.string().required(),
   email: yup.string().email().required(),
-  contact: yup
-    .number()
-    .typeError('Contact Number field is required')
-    .min(10, obj => showErrors('Contact Number', obj.value.length, obj.min))
-    .required(),
-  fullName: yup
+  phone: yup
+    .string()
+    .required('رقم الهاتف مطلوب')
+    .matches(
+      /^01[0-2,5]\d{8}$/,
+      'رقم الهاتف غير صالح'
+    ),
+  password: yup
+    .string()
+    .min(6, 'كلمة المرور يجب ألا تقل عن 6 أحرف')
+    .required('كلمة المرور مطلوبة'),
+
+  name: yup
     .string()
     .min(3, obj => showErrors('First Name', obj.value.length, obj.min))
     .required(),
-  username: yup
-    .string()
-    .min(3, obj => showErrors('Username', obj.value.length, obj.min))
-    .required()
+
 })
 
 const defaultValues = {
   email: '',
-  company: '',
-  country: '',
-  billing: '',
-  fullName: '',
-  username: '',
-  contact: Number('')
+  phone: '',
+  name: '',
+  password: '',
+
 }
 
 const SidebarAddUser = (props: SidebarAddUserType) => {
-  // ** Props
   const { open, toggle } = props
 
-  // ** State
   const [plan, setPlan] = useState<string>('basic')
   const [role, setRole] = useState<string>('subscriber')
+  const [loading, setLoading] = useState<boolean>(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // ** Hooks
   const dispatch = useDispatch<AppDispatch>()
-  const store = useSelector((state: RootState) => state.user)
   const {
     reset,
     control,
-    setValue,
-    setError,
     handleSubmit,
     formState: { errors }
-  } = useForm({
+  } = useForm<UserData>({
     defaultValues,
     mode: 'onChange',
     resolver: yupResolver(schema)
   })
-  const onSubmit = (data: UserData) => {
-    if (store.allData.some((u: UsersType) => u.email === data.email || u.username === data.username)) {
-      store.allData.forEach((u: UsersType) => {
-        if (u.email === data.email) {
-          setError('email', {
-            message: 'Email already exists!'
-          })
-        }
-        if (u.username === data.username) {
-          setError('username', {
-            message: 'Username already exists!'
-          })
-        }
-      })
-    } else {
-      dispatch(addUser({ ...data, role, currentPlan: plan }))
-      toggle()
+
+  const onSubmit = async (data: UserData) => {
+    setLoading(true)
+    setErrorMsg(null)
+    try {
+      // unwrap() لإرجاع promise حقيقية من createAsyncThunk
+      await dispatch(
+        createUser({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          password: data.password,
+          role
+        })
+      ).unwrap()
+
+      // بعد النجاح
       reset()
+      toggle() // اغلاق Drawer
+    } catch (error: any) {
+      setErrorMsg(error || 'حدث خطأ أثناء إنشاء المستخدم')
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleClose = () => {
     setPlan('basic')
     setRole('subscriber')
-    setValue('contact', Number(''))
-    toggle()
     reset()
+    setErrorMsg(null)
+    toggle()
   }
 
   return (
@@ -156,152 +155,78 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
     >
       <Header>
         <Typography variant='h5'>Add User</Typography>
-        <IconButton
-          size='small'
-          onClick={handleClose}
-          sx={{
-            p: '0.438rem',
-            borderRadius: 1,
-            color: 'text.primary',
-            backgroundColor: 'action.selected',
-            '&:hover': {
-              backgroundColor: theme => `rgba(${theme.palette.customColors.main}, 0.16)`
-            }
-          }}
-        >
+        <IconButton size='small' onClick={handleClose}>
           <Icon icon='tabler:x' fontSize='1.125rem' />
         </IconButton>
       </Header>
-      <Box sx={{ p: theme => theme.spacing(0, 6, 6) }}>
+
+      <Box sx={{ p: 6 }}>
+        {errorMsg && (
+          <Typography color='error' sx={{ mb: 2 }}>
+            {errorMsg}
+          </Typography>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)}>
           <Controller
-            name='fullName'
+            name='name'
             control={control}
-            rules={{ required: true }}
-            render={({ field: { value, onChange } }) => (
+            render={({ field }) => (
               <CustomTextField
                 fullWidth
-                value={value}
-                sx={{ mb: 4 }}
                 label='Full Name'
-                onChange={onChange}
-                placeholder='John Doe'
-                error={Boolean(errors.fullName)}
-                {...(errors.fullName && { helperText: errors.fullName.message })}
+                sx={{ mb: 4 }}
+                {...field}
+                error={Boolean(errors.name)}
+                helperText={errors.name?.message}
               />
             )}
           />
           <Controller
-            name='username'
+            name='password'
             control={control}
-            rules={{ required: true }}
-            render={({ field: { value, onChange } }) => (
+            render={({ field }) => (
               <CustomTextField
                 fullWidth
-                value={value}
+                type='password'
+                label='Password'
                 sx={{ mb: 4 }}
-                label='Username'
-                onChange={onChange}
-                placeholder='johndoe'
-                error={Boolean(errors.username)}
-                {...(errors.username && { helperText: errors.username.message })}
+                {...field}
+                error={Boolean(errors.password)}
+                helperText={errors.password?.message}
               />
             )}
           />
           <Controller
             name='email'
             control={control}
-            rules={{ required: true }}
-            render={({ field: { value, onChange } }) => (
+            render={({ field }) => (
               <CustomTextField
                 fullWidth
                 type='email'
                 label='Email'
-                value={value}
                 sx={{ mb: 4 }}
-                onChange={onChange}
+                {...field}
                 error={Boolean(errors.email)}
-                placeholder='johndoe@email.com'
-                {...(errors.email && { helperText: errors.email.message })}
+                helperText={errors.email?.message}
               />
             )}
           />
           <Controller
-            name='company'
+            name='phone'
             control={control}
-            rules={{ required: true }}
-            render={({ field: { value, onChange } }) => (
+            render={({ field }) => (
               <CustomTextField
                 fullWidth
-                value={value}
+                label='Phone'
                 sx={{ mb: 4 }}
-                label='Company'
-                onChange={onChange}
-                placeholder='Company PVT LTD'
-                error={Boolean(errors.company)}
-                {...(errors.company && { helperText: errors.company.message })}
+                {...field}
+                error={Boolean(errors.phone)}
+                helperText={errors.phone?.message}
               />
             )}
           />
-          <Controller
-            name='country'
-            control={control}
-            rules={{ required: true }}
-            render={({ field: { value, onChange } }) => (
-              <CustomTextField
-                fullWidth
-                value={value}
-                sx={{ mb: 4 }}
-                label='Country'
-                onChange={onChange}
-                placeholder='Australia'
-                error={Boolean(errors.country)}
-                {...(errors.country && { helperText: errors.country.message })}
-              />
-            )}
-          />
-          <Controller
-            name='contact'
-            control={control}
-            rules={{ required: true }}
-            render={({ field: { value, onChange } }) => (
-              <CustomTextField
-                fullWidth
-                type='number'
-                value={value}
-                sx={{ mb: 4 }}
-                label='Contact'
-                onChange={onChange}
-                placeholder='(397) 294-5153'
-                error={Boolean(errors.contact)}
-                {...(errors.contact && { helperText: errors.contact.message })}
-              />
-            )}
-          />
-          <Controller
-            name='billing'
-            control={control}
-            rules={{ required: true }}
-            render={({ field: { value, onChange } }) => (
-              <CustomTextField
-                select
-                fullWidth
-                sx={{ mb: 4 }}
-                label='Billing'
-                id='validation-billing-select'
-                error={Boolean(errors.billing)}
-                aria-describedby='validation-billing-select'
-                {...(errors.billing && { helperText: errors.billing.message })}
-                SelectProps={{ value: value, onChange: e => onChange(e) }}
-              >
-                <MenuItem value=''>Billing</MenuItem>
-                <MenuItem value='Auto Debit'>Auto Debit</MenuItem>
-                <MenuItem value='Manual - Cash'>Manual - Cash</MenuItem>
-                <MenuItem value='Manual - Paypal'>Manual - Paypal</MenuItem>
-                <MenuItem value='Manual - Credit Card'>Manual - Credit Card</MenuItem>
-              </CustomTextField>
-            )}
-          />
+
           <CustomTextField
             select
             fullWidth
@@ -309,32 +234,17 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
             sx={{ mb: 4 }}
             label='Select Role'
             onChange={e => setRole(e.target.value)}
-            SelectProps={{ value: role, onChange: e => setRole(e.target.value as string) }}
           >
-            <MenuItem value='admin'>Admin</MenuItem>
-            <MenuItem value='author'>Author</MenuItem>
-            <MenuItem value='editor'>Editor</MenuItem>
-            <MenuItem value='maintainer'>Maintainer</MenuItem>
-            <MenuItem value='subscriber'>Subscriber</MenuItem>
+            <MenuItem value='user'>user</MenuItem>
+            <MenuItem value='admin'>admin</MenuItem>
+            <MenuItem value='owner'>owner</MenuItem>
           </CustomTextField>
 
-          <CustomTextField
-            select
-            fullWidth
-            sx={{ mb: 6 }}
-            label='Select Plan'
-            SelectProps={{ value: plan, onChange: e => setPlan(e.target.value as string) }}
-          >
-            <MenuItem value='basic'>Basic</MenuItem>
-            <MenuItem value='company'>Company</MenuItem>
-            <MenuItem value='enterprise'>Enterprise</MenuItem>
-            <MenuItem value='team'>Team</MenuItem>
-          </CustomTextField>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Button type='submit' variant='contained' sx={{ mr: 3 }}>
-              Submit
+            <Button type='submit' variant='contained' disabled={loading} sx={{ mr: 3 }}>
+              {loading ? 'Loading...' : 'Submit'}
             </Button>
-            <Button variant='tonal' color='secondary' onClick={handleClose}>
+            <Button variant='outlined' color='secondary' onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
           </Box>
@@ -343,5 +253,6 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
     </Drawer>
   )
 }
+
 
 export default SidebarAddUser

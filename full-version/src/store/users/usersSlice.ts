@@ -55,7 +55,7 @@ export const fetchUsers = createAsyncThunk<
   { rejectValue: string }
 >('users/fetchUsers', async (params, { rejectWithValue }) => {
   try {
-    const res = await axios.get('/users', { params })
+    const res = await axios.get('/auth/users', { params })
     return res.data
   } catch (err: any) {
     return rejectWithValue(err.response?.data?.message || 'فشل جلب المستخدمين')
@@ -83,7 +83,7 @@ export const updateUser = createAsyncThunk<
   { rejectValue: string }
 >('users/updateUser', async (data, { rejectWithValue }) => {
   try {
-    const res = await axios.put('/user', data)
+    const res = await axios.put('/auth/user', data)
     return res.data.user
   } catch (err: any) {
     return rejectWithValue(err.response?.data?.message || 'فشل تعديل المستخدم')
@@ -97,7 +97,7 @@ export const deleteUser = createAsyncThunk<
   { rejectValue: string }
 >('users/deleteUser', async (data, { rejectWithValue }) => {
   try {
-    const res = await axios.delete('/user', { data })
+    const res = await axios.delete('/auth/user', { data })
     return res.data.message
   } catch (err: any) {
     return rejectWithValue(err.response?.data?.message || 'فشل حذف المستخدم')

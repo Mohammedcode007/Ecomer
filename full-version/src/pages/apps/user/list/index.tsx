@@ -50,6 +50,7 @@ import { CardStatsHorizontalWithDetailsProps } from 'src/@core/components/card-s
 // ** Custom Table Components Imports
 import TableHeader from 'src/views/apps/user/list/TableHeader'
 import AddUserDrawer from 'src/views/apps/user/list/AddUserDrawer'
+import { fetchUsers } from 'src/store/users/usersSlice'
 
 interface UserRoleType {
   [key: string]: { icon: string; color: string }
@@ -78,9 +79,10 @@ const userStatusObj: UserStatusType = {
   inactive: 'secondary'
 }
 
+
 // ** renders client column
 const renderClient = (row: UsersType) => {
-  if (row.avatar.length) {
+  if (row?.avatar?.length) {
     return <CustomAvatar src={row.avatar} sx={{ mr: 2.5, width: 38, height: 38 }} />
   } else {
     return (
@@ -115,6 +117,12 @@ const RowOptions = ({ id }: { id: number | string }) => {
     dispatch(deleteUser(id))
     handleRowOptionsClose()
   }
+  const [editOpen, setEditOpen] = useState(false)
+
+  const handleEdit = () => {
+    setEditOpen(true)
+    handleRowOptionsClose()
+  }
 
   return (
     <>
@@ -145,7 +153,7 @@ const RowOptions = ({ id }: { id: number | string }) => {
           <Icon icon='tabler:eye' fontSize={20} />
           View
         </MenuItem>
-        <MenuItem onClick={handleRowOptionsClose} sx={{ '& svg': { mr: 2 } }}>
+        <MenuItem onClick={handleEdit} sx={{ '& svg': { mr: 2 } }}>
           <Icon icon='tabler:edit' fontSize={20} />
           Edit
         </MenuItem>
@@ -198,14 +206,18 @@ const columns: GridColDef[] = [
     minWidth: 170,
     headerName: 'Role',
     renderCell: ({ row }: CellType) => {
+      const roleConfig = userRoleObj[row.role] || {
+        icon: 'tabler:user',
+        color: 'primary'
+      }
       return (
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <CustomAvatar
             skin='light'
             sx={{ mr: 4, width: 30, height: 30 }}
-            color={(userRoleObj[row.role].color as ThemeColor) || 'primary'}
+            color={roleConfig.color as ThemeColor}
           >
-            <Icon icon={userRoleObj[row.role].icon} />
+            <Icon icon={roleConfig.icon} />
           </CustomAvatar>
           <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
             {row.role}
@@ -309,6 +321,12 @@ const UserList = ({ apiData }: InferGetStaticPropsType<typeof getStaticProps>) =
   }, [])
 
   const toggleAddUserDrawer = () => setAddUserOpen(!addUserOpen)
+  useEffect(() => {
+    dispatch(fetchUsers({ page: 1, limit: 10 }))
+  }, [dispatch])
+
+  const { users, loading, total } = useSelector((state: RootState) => state.users)
+  console.log(users, '44444444');
 
   return (
     <Grid container spacing={6.5}>
@@ -388,18 +406,33 @@ const UserList = ({ apiData }: InferGetStaticPropsType<typeof getStaticProps>) =
           </CardContent>
           <Divider sx={{ m: '0 !important' }} />
           <TableHeader value={value} handleFilter={handleFilter} toggle={toggleAddUserDrawer} />
-          <DataGrid
+          {/* <DataGrid
             autoHeight
             rowHeight={62}
-            rows={store.data}
+            // rows={store.data}
+                        rows={users}
+
             columns={columns}
             disableRowSelectionOnClick
             pageSizeOptions={[10, 25, 50]}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
+          /> */}
+          <DataGrid
+            autoHeight
+            rowHeight={62}
+            rows={users}
+            columns={columns}
+            getRowId={(row) => row._id}
+            disableRowSelectionOnClick
+            pageSizeOptions={[10, 25, 50]}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
           />
+
         </Card>
       </Grid>
+
 
       <AddUserDrawer open={addUserOpen} toggle={toggleAddUserDrawer} />
     </Grid>
