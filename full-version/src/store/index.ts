@@ -10,6 +10,7 @@ import calendar from 'src/store/apps/calendar'
 import permissions from 'src/store/apps/permissions'
 import authReducer from './auth/authSlice'
 import usersReducer from './users/usersSlice'
+import productsReducer from './products/productsSlice' // ✅ جديد
 
 export const store = configureStore({
   reducer: {
@@ -20,7 +21,9 @@ export const store = configureStore({
     calendar,
     permissions,
         auth: authReducer,
-            users: usersReducer
+            users: usersReducer,
+    products: productsReducer // ✅ إضافة المنتجات
+
 
 
   },

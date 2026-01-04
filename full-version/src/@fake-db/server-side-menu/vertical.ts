@@ -100,6 +100,16 @@ const navigation: VerticalNavItemsType = [
       }
     ]
   },
+    {
+    title: 'Products',
+    icon: 'tabler:user',
+    children: [
+      {
+        title: 'List',
+        path: '/apps/product/list'
+      }
+    ]
+  },
   {
     title: 'Roles & Permissions',
     icon: 'tabler:settings',

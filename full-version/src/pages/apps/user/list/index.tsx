@@ -51,6 +51,7 @@ import { CardStatsHorizontalWithDetailsProps } from 'src/@core/components/card-s
 import TableHeader from 'src/views/apps/user/list/TableHeader'
 import AddUserDrawer from 'src/views/apps/user/list/AddUserDrawer'
 import { fetchUsers } from 'src/store/users/usersSlice'
+import EditUserDrawer from 'src/views/apps/user/list/EditUserDrawer'
 
 interface UserRoleType {
   [key: string]: { icon: string; color: string }
@@ -96,8 +97,14 @@ const renderClient = (row: UsersType) => {
     )
   }
 }
+interface RowOptionsProps {
+  id: number | string
+  onEdit: (user: UsersType) => void
+  user: UsersType
 
-const RowOptions = ({ id }: { id: number | string }) => {
+}
+
+const RowOptions = ({ id, onEdit, user }: RowOptionsProps) => {
   // ** Hooks
   const dispatch = useDispatch<AppDispatch>()
 
@@ -120,7 +127,8 @@ const RowOptions = ({ id }: { id: number | string }) => {
   const [editOpen, setEditOpen] = useState(false)
 
   const handleEdit = () => {
-    setEditOpen(true)
+    console.log('Edit clicked for:', user._id)
+    onEdit(user)
     handleRowOptionsClose()
   }
 
@@ -166,7 +174,7 @@ const RowOptions = ({ id }: { id: number | string }) => {
   )
 }
 
-const columns: GridColDef[] = [
+const getColumns = (onEdit: (user: UsersType) => void): GridColDef[] => [
   {
     flex: 0.25,
     minWidth: 280,
@@ -276,7 +284,10 @@ const columns: GridColDef[] = [
     sortable: false,
     field: 'actions',
     headerName: 'Actions',
-    renderCell: ({ row }: CellType) => <RowOptions id={row.id} />
+    renderCell: ({ row }: CellType) => <RowOptions id={row._id} user={row}
+      onEdit={onEdit}
+
+    />
   }
 ]
 
@@ -286,7 +297,10 @@ const UserList = ({ apiData }: InferGetStaticPropsType<typeof getStaticProps>) =
   const [plan, setPlan] = useState<string>('')
   const [value, setValue] = useState<string>('')
   const [status, setStatus] = useState<string>('')
+  const [editUserOpen, setEditUserOpen] = useState<boolean>(false)
   const [addUserOpen, setAddUserOpen] = useState<boolean>(false)
+  const [selectedUser, setSelectedUser] = useState<UsersType | null>(null)
+
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
 
   // ** Hooks
@@ -321,12 +335,24 @@ const UserList = ({ apiData }: InferGetStaticPropsType<typeof getStaticProps>) =
   }, [])
 
   const toggleAddUserDrawer = () => setAddUserOpen(!addUserOpen)
+  const toggleEditUserDrawer = (user?: UsersType) => {
+    if (user) {
+      console.log('تم اختيار المستخدم للتعديل:', user)
+      setSelectedUser(user)
+    }
+
+    setEditUserOpen(prev => !prev)
+  }
+
+
+
+
   useEffect(() => {
     dispatch(fetchUsers({ page: 1, limit: 10 }))
   }, [dispatch])
 
   const { users, loading, total } = useSelector((state: RootState) => state.users)
-  console.log(users, '44444444');
+  const columns = getColumns(toggleEditUserDrawer)
 
   return (
     <Grid container spacing={6.5}>
@@ -433,6 +459,8 @@ const UserList = ({ apiData }: InferGetStaticPropsType<typeof getStaticProps>) =
         </Card>
       </Grid>
 
+      <EditUserDrawer open={editUserOpen} toggle={toggleEditUserDrawer} user={selectedUser}
+      />
 
       <AddUserDrawer open={addUserOpen} toggle={toggleAddUserDrawer} />
     </Grid>

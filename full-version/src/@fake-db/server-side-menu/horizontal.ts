@@ -102,6 +102,16 @@ const navigation: HorizontalNavItemsType = [
           }
         ]
       },
+        {
+        title: 'product',
+        icon: 'tabler:user',
+        children: [
+          {
+            title: 'List',
+            path: '/apps/product/list'
+          }
+        ]
+      },
       {
         title: 'Roles & Permissions',
         icon: 'tabler:settings',

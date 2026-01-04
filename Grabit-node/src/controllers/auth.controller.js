@@ -172,39 +172,42 @@ exports.resetPassword = async (req, res, next) => {
 // تعديل بيانات المستخدم اعتماداً على التوكن
 exports.updateUser = async (req, res, next) => {
   try {
-    const { name, email, phone, role } = req.body;
+    const { name, phone, role } = req.body; // ❌ لا يوجد email
+    const userId = req.user._id;
 
-    const user = req.user; // هنا نستخدم req.user بعد middleware
-    if (!user) {
+    if (!userId) {
       res.status(404);
       throw new Error("المستخدم غير موجود");
     }
 
-    if (email && email !== user.email) {
-      const emailExists = await User.findOne({ email });
-      if (emailExists) throw new Error("البريد الإلكتروني مستخدم بالفعل");
-      user.email = email;
-    }
+    const updateFields = {};
 
-    if (phone && phone !== user.phone) {
-      const phoneExists = await User.findOne({ phone });
-      if (phoneExists) throw new Error("رقم الهاتف مستخدم بالفعل");
-      user.phone = phone;
-    }
+    if (name !== undefined) updateFields.name = name;
+    if (phone !== undefined) updateFields.phone = phone;
+    if (role !== undefined) updateFields.role = role;
 
-    if (name) user.name = name;
-    if (role) user.role = role;
-
-    await user.save();
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateFields },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
 
     res.json({
       message: "تم تعديل بيانات المستخدم بنجاح",
-      user
+      user: updatedUser
     });
   } catch (error) {
     next(error);
   }
 };
+
+
+
+
+
 
 // حذف المستخدم اعتماداً على التوكن
 exports.deleteUser = async (req, res, next) => {
