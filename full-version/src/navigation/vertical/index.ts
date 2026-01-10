@@ -108,6 +108,26 @@ const navigation = (): VerticalNavItemsType => {
         }
       ]
     },
+     {
+      title: 'categories',
+      icon: 'tabler:user',
+      children: [
+        {
+          title: 'List',
+          path: '/apps/categories/list'
+        }
+      ]
+    },
+     {
+      title: 'orders',
+      icon: 'tabler:user',
+      children: [
+        {
+          title: 'List',
+          path: '/apps/orders/list'
+        }
+      ]
+    },
     {
       title: 'Roles & Permissions',
       icon: 'tabler:settings',

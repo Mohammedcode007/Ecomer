@@ -11,6 +11,9 @@ import permissions from 'src/store/apps/permissions'
 import authReducer from './auth/authSlice'
 import usersReducer from './users/usersSlice'
 import productsReducer from './products/productsSlice' // ✅ جديد
+import categoriesReducer from './categories/categoriesSlice' // ✅ جديد
+import ordersReducer from './orders/ordersSlice' // ✅ جديد
+
 
 export const store = configureStore({
   reducer: {
@@ -22,7 +25,10 @@ export const store = configureStore({
     permissions,
         auth: authReducer,
             users: usersReducer,
-    products: productsReducer // ✅ إضافة المنتجات
+    products: productsReducer ,
+    categories:categoriesReducer,
+        orders:ordersReducer
+
 
 
 
