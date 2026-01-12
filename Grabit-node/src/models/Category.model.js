@@ -11,6 +11,11 @@ const categorySchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+       icon: {
+      type: String,
+      default: "fi fi-rr-apps", // أيقونة افتراضية
+      trim: true
+    },
     parent: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",

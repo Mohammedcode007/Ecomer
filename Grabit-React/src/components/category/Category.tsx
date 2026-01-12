@@ -1,3 +1,4 @@
+
 "use client";
 import { Col, Row } from "react-bootstrap";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -8,31 +9,44 @@ import fetcher from "../fetcher-api/Fetcher";
 import Spinner from "../button/Spinner";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useEffect } from "react";
+import { fetchCategories } from "@/store/reducers/categories/categoriesSlice";
 
 const Category = ({
-  onSuccess = () => {},
+  onSuccess = () => { },
   hasPaginate = false,
-  onError = () => {},
+  onError = () => { },
   className = "padding-tb-40",
 }) => {
   const { direction } = useSelector((state: RootState) => state.theme);
-  const { data, error } = useSWR("/api/grocerycategory", fetcher, {
-    onSuccess,
-    onError,
-  });
+
+  const dispatch = useAppDispatch();
+
+  const { categories, loading, error } = useAppSelector(
+    state => state.categories
+  );
+
+  // جلب الفئات عند تحميل الكومبوننت
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  // فئات رئيسية فقط
+  const mainCategories = categories.filter(
+    (cat: any) => !cat.parent && !cat.parentId
+  );
+  console.log(mainCategories.length);
 
   if (error) return <div>Failed to load products</div>;
-  if (!data)
+  if (!categories)
     return (
       <div>
         <Spinner />
       </div>
     );
 
-  const getData = () => {
-    if (hasPaginate) return data.data;
-    else return data;
-  };
+
 
   return (
     <section className={`gi-category body-bg ${className}`}>
@@ -73,14 +87,13 @@ const Category = ({
               }}
               className={`gi-category-block owl-carousel  ${direction == "RTL" ? "rtl" : "ltr"}`}
             >
-              {getData().map((item: any, index: number) => (
-                <SwiperSlide
-                  key={index}
-                  className={`gi-cat-box gi-cat-box-${item.num}`}
+              {mainCategories.map((item: any) => (
+                <SwiperSlide key={item._id} className={`gi-cat-box gi-cat-box-${item.num}`}
                 >
                   <CategoryItem data={item} />
                 </SwiperSlide>
               ))}
+
             </Swiper>
           </Col>
         </Row>

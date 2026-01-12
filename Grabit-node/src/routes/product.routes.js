@@ -7,11 +7,14 @@ const {
   getProductById,
   deleteProduct,
   getTopRatedProducts,
-  getMostPopularProducts
+  getMostPopularProducts,
+    getProductsByStatus // ← استدعاء الدالة الجديدة
+
 } = require("../controllers/product.controller");
 const { protect, adminOrOwner } = require("../middlewares/auth.middleware");
 router.get("/top-rated", getTopRatedProducts);
 router.get("/most-popular", getMostPopularProducts);
+router.get("/status", getProductsByStatus); // ← هنا
 
 // جلب كل المنتجات مع pagination + بحث بالاسم
 router.get("/", getProducts);

@@ -1,45 +1,3 @@
-// const mongoose = require("mongoose");
-// const reviewSchema = require("./Review.model");
-
-// const productSchema = new mongoose.Schema(
-//   {
-//     name: { type: String, required: true, trim: true },
-//     description: { type: String, required: true, trim: true },
-//     price: { type: Number, required: true, min: 0 },
-//     priceBeforeDiscount: { type: Number, default: 0, min: 0 },
-//     colors: { type: [String], default: [] },
-//     stockQuantity: { type: Number, required: true, default: 0, min: 0 },
-//     images: { type: [String], default: [] },
-//     hasDiscount: { type: Boolean, default: false },
-//       category: {
-//       type: mongoose.Schema.Types.ObjectId,
-//       ref: "Category",
-//       required: true
-//     },
-
-//     ratingsAverage: {
-//       type: Number,
-//       default: 0,
-//       min: 1,
-//       max: 5
-//     },
-//     ratingsQuantity: {
-//       type: Number,
-//       default: 0
-//     },
-
-//     reviews: [reviewSchema],
-//   },
-
-//   { timestamps: true }
-// );
-
-// // Middleware لحساب hasDiscount قبل الحفظ
-// productSchema.pre("save", function () {
-//   this.hasDiscount = this.priceBeforeDiscount > this.price;
-// });
-
-// module.exports = mongoose.model("Product", productSchema);
 
 const mongoose = require("mongoose");
 const reviewSchema = require("./Review.model");
@@ -55,7 +13,7 @@ const productSchema = new mongoose.Schema(
     images: { type: [String], default: [] },
 
     hasDiscount: { type: Boolean, default: false },
-  sizes: [
+    sizes: [
       {
         size: { type: String, required: true },
         stock: { type: Number, required: true, min: 0 }
@@ -67,12 +25,12 @@ const productSchema = new mongoose.Schema(
       required: true
     },
 
-ratingsAverage: {
-  type: Number,
-  default: 0,
-  min: 0,
-  max: 5
-},
+    ratingsAverage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5
+    },
     ratingsQuantity: {
       type: Number,
       default: 0
@@ -88,7 +46,11 @@ ratingsAverage: {
       type: Boolean,
       default: false
     },
-
+   topSelling: { type: Boolean, default: false },
+    topRated: { type: Boolean, default: false },
+    trendingItems: { type: Boolean, default: false },
+    newArrivals: { type: Boolean, default: false },
+    dealOfTheDay: { type: Boolean, default: false },
     reviews: [reviewSchema]
   },
   { timestamps: true }

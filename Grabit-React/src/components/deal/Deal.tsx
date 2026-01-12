@@ -8,6 +8,10 @@ import useSWR from "swr";
 import fetcher from "../fetcher-api/Fetcher";
 import DealendTimer from "../dealend-timer/DealendTimer";
 import Spinner from "../button/Spinner";
+import { AppDispatch, RootState } from "@/store";
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect } from "react";
+import { fetchProductsByStatus } from "@/store/reducers/products/productsSlice";
 
 const Deal = ({
   onSuccess = () => {},
@@ -15,7 +19,21 @@ const Deal = ({
   onError = () => {},
 }) => {
   const { data, error } = useSWR("/api/deal", fetcher, { onSuccess, onError });
+  const dispatch = useDispatch<AppDispatch>();
 
+  // جلب البيانات من Redux
+  const { dealOfTheDay, loading } = useSelector(
+    (state: RootState) => state.products.statusProducts
+  );
+  console.log(dealOfTheDay,'444444444');
+  
+
+  useEffect(() => {
+    dispatch(fetchProductsByStatus({ type: "dealOfTheDay", page: 1, limit: 10 }))
+      .unwrap()
+      .then(onSuccess)
+      .catch(onError);
+  }, [dispatch, onSuccess, onError]);
   if (error) return <div>Failed to load products</div>;
   if (!data)
     return (
@@ -48,7 +66,7 @@ const Deal = ({
                   <Fade triggerOnce direction="up" duration={2000} delay={200}>
                     <div className="section-detail">
                       <h2 className="gi-title">
-                        Day of the <span>deal</span>
+                        Day of the  <span>deal</span>
                       </h2>
                       <p>Don`t wait. The time will never be just right.</p>
                     </div>

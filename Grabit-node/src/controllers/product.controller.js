@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 
 const Category = require("../models/Category.model");
 
-// إنشاء منتج جديد
 exports.createProduct = async (req, res, next) => {
   try {
     const {
@@ -11,10 +10,15 @@ exports.createProduct = async (req, res, next) => {
       description,
       price,
       priceBeforeDiscount,
-      colors,
-      images,
+      colors = [],
+      images = [],
       category,
-      sizes
+      sizes = [],
+      topSelling = false,
+      topRated = false,
+      trendingItems = false,
+      newArrivals = false,
+      dealOfTheDay = false
     } = req.body;
 
     // التحقق من وجود الفئة
@@ -33,6 +37,7 @@ exports.createProduct = async (req, res, next) => {
       );
     }
 
+    // إنشاء المنتج
     const product = await Product.create({
       name,
       description,
@@ -42,7 +47,12 @@ exports.createProduct = async (req, res, next) => {
       images,
       category,
       sizes,
-      stockQuantity
+      stockQuantity,
+      topSelling,
+      topRated,        // يمكن تعديله لاحقًا بناءً على التقييمات
+      trendingItems,
+      newArrivals,
+      dealOfTheDay
     });
 
     res.status(201).json(product);
@@ -50,6 +60,7 @@ exports.createProduct = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // تعديل منتج (admin/owner)
 exports.updateProduct = async (req, res, next) => {
@@ -68,7 +79,12 @@ exports.updateProduct = async (req, res, next) => {
       colors,
       images,
       category,
-      sizes
+      sizes,
+       topSelling,
+      topRated,
+      trendingItems,
+      newArrivals,
+      dealOfTheDay
     } = req.body;
 
     // لو تم إرسال فئة جديدة
@@ -98,6 +114,11 @@ exports.updateProduct = async (req, res, next) => {
         0
       );
     }
+    if (typeof topSelling === "boolean") product.topSelling = topSelling;
+    if (typeof topRated === "boolean") product.topRated = topRated;
+    if (typeof trendingItems === "boolean") product.trendingItems = trendingItems;
+    if (typeof newArrivals === "boolean") product.newArrivals = newArrivals;
+    if (typeof dealOfTheDay === "boolean") product.dealOfTheDay = dealOfTheDay;
 
     const updatedProduct = await product.save();
     res.json(updatedProduct);
@@ -106,6 +127,68 @@ exports.updateProduct = async (req, res, next) => {
   }
 };
 
+exports.getProductsByStatus = async (req, res, next) => {
+  try {
+    let { page = 1, limit = 10, type } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    // Helper function لجلب المنتجات مع pagination
+    const getProducts = async (filter = {}, sort = { createdAt: -1 }) => {
+      const products = await Product.find(filter)
+        .sort(sort)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select(
+          "name price priceBeforeDiscount hasDiscount images ratingsAverage ratingsQuantity salesCount isMostPopular createdAt topSelling topRated trendingItems newArrivals dealOfTheDay"
+        )
+        .populate("category", "name");
+
+      const total = await Product.countDocuments(filter);
+
+      return {
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        totalProducts: total,
+        products
+      };
+    };
+
+    let result;
+
+    switch (type) {
+      case "topSelling":
+        result = await getProducts({ topSelling: true }, { salesCount: -1 });
+        break;
+      case "topRated":
+        result = await getProducts({ topRated: true }, { ratingsAverage: -1, ratingsQuantity: -1 });
+        break;
+      case "trendingItems":
+        result = await getProducts({ trendingItems: true }, { ratingsQuantity: -1 });
+        break;
+      case "newArrivals":
+        result = await getProducts({ newArrivals: true }, { createdAt: -1 });
+        break;
+      case "dealOfTheDay":
+        result = await getProducts({ dealOfTheDay: true }, { createdAt: -1 });
+        break;
+      default:
+        // إذا لم يمرر type، ارجع كل الحالات
+        result = {
+          topSelling: await getProducts({ topSelling: true }, { salesCount: -1 }),
+          topRated: await getProducts({ topRated: true }, { ratingsAverage: -1, ratingsQuantity: -1 }),
+          trendingItems: await getProducts({ trendingItems: true }, { ratingsQuantity: -1 }),
+          newArrivals: await getProducts({ newArrivals: true }, { createdAt: -1 }),
+          dealOfTheDay: await getProducts({ dealOfTheDay: true }, { createdAt: -1 })
+        };
+    }
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
 
 
 // جلب كل المنتجات مع pagination وبحث بالاسم وترتيب حسب السعر
@@ -310,3 +393,11 @@ exports.getMostPopularProducts = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Get Products by Status
+ * GET /products/status
+ * Query params: limit, page
+ */
+
+

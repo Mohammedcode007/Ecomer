@@ -3,9 +3,8 @@ const Category = require("../models/Category.model");
 // إنشاء فئة جديدة (Admin/Owner فقط)
 exports.createCategory = async (req, res, next) => {
   try {
-    const { name, description, parent } = req.body;
+    const { name, description, parent, icon } = req.body;
 
-    // في حالة إضافة فئة فرعية
     if (parent) {
       const parentCategory = await Category.findById(parent);
       if (!parentCategory) {
@@ -17,7 +16,8 @@ exports.createCategory = async (req, res, next) => {
     const category = await Category.create({
       name,
       description,
-      parent: parent || null
+      parent: parent || null,
+      icon: icon || "fi fi-rr-apps" // افتراضي
     });
 
     res.status(201).json(category);
@@ -25,10 +25,11 @@ exports.createCategory = async (req, res, next) => {
     next(error);
   }
 };
+
 // تعديل فئة (Admin/Owner فقط)
 exports.updateCategory = async (req, res, next) => {
   try {
-    const { name, description, parent } = req.body;
+    const { name, description, parent, icon } = req.body;
 
     const category = await Category.findById(req.params.id);
     if (!category) {
@@ -47,6 +48,7 @@ exports.updateCategory = async (req, res, next) => {
     category.name = name ?? category.name;
     category.description = description ?? category.description;
     category.parent = parent ?? category.parent;
+    category.icon = icon ?? category.icon; // تحديث الأيقونة
 
     const updatedCategory = await category.save();
     res.json(updatedCategory);
@@ -54,6 +56,7 @@ exports.updateCategory = async (req, res, next) => {
     next(error);
   }
 };
+
 
 
 // حذف فئة (Admin/Owner فقط)

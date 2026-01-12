@@ -11,6 +11,8 @@ import compareSlice from "./reducers/compareSlice";
 import stepSlice from "./reducers/stepSlice";
 import filterReducer from "./reducers/filterReducer";
 import themeSlice from "./reducers/themeSlice";
+import categoriesReducer from "./reducers/categories/categoriesSlice";
+import productsReducer from "./reducers/products/productsSlice"; // مسار المنتجات
 
 // Configure persist for each slice separately
 const persistConfigCart = { key: "cart", storage };
@@ -51,6 +53,10 @@ const rootReducer = combineReducers({
   step: persistedStepReducer,
   filter: persistedFilterReducer,
   theme: persistedThemeReducer,
+    categories: categoriesReducer,
+      products: productsReducer, // ← إضافة منتجات
+
+
 });
 
 // Configure store
