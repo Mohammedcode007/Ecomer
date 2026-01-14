@@ -1,10 +1,152 @@
+// "use client";
+// import { Col, Row } from "react-bootstrap";
+// import { Swiper, SwiperSlide } from "swiper/react";
+// import "swiper/css";
+// import ItemCard from "../product-item/ItemCard";
+// import { Fade } from "react-awesome-reveal";
+// import useSWR from "swr";
+// import fetcher from "../fetcher-api/Fetcher";
+// import DealendTimer from "../dealend-timer/DealendTimer";
+// import Spinner from "../button/Spinner";
+// import { AppDispatch, RootState } from "@/store";
+// import { useDispatch, useSelector } from "react-redux";
+// import { useEffect } from "react";
+// import { fetchProductsByStatus } from "@/store/reducers/products/productsSlice";
+// import { useAppDispatch, useAppSelector } from "@/store/hooks";
+
+// const Deal = ({
+//   onSuccess = () => {},
+//   hasPaginate = false,
+//   onError = () => {},
+// }) => {
+//   const { data, error } = useSWR("/api/deal", fetcher, { onSuccess, onError });
+//   const dispatch = useAppDispatch();
+//   const { dealOfTheDay } = useAppSelector(state => state.products.statusProducts);
+
+//   // جلب البيانات من Redux
+
+//     useEffect(() => {
+//   if (dealOfTheDay) {
+//     console.log(dealOfTheDay, 'تم جلب البيانات ✅');
+//   }
+// }, [dealOfTheDay]);
+
+
+//   console.log(dealOfTheDay,'444444444');
+
+
+//   useEffect(() => {
+//     dispatch(fetchProductsByStatus({ type: "dealOfTheDay", page: 1, limit: 10 }))
+//       .unwrap()
+//       .then(onSuccess)
+//       .catch(onError);
+//   },[dispatch] );
+//   if (error) return <div>Failed to load products</div>;
+//   if (!data)
+//     return (
+//       <div>
+//         <Spinner />
+//       </div>
+//     );
+
+//   const getData = () => {
+//     if (hasPaginate) return data.data;
+//     else return data;
+//   };
+
+//   return (
+//     <>
+//       <section
+//         className="gi-deal-section padding-tb-40 wow fadeInUp"
+//         data-wow-duration="2s"
+//       >
+//         <div className="container">
+//           <Row className="overflow-hidden m-b-minus-24px">
+//             <Col lg={12} className="gi-deal-section col-lg-12">
+//               <div className="gi-products">
+//                 <div
+//                   className="section-title"
+//                   data-aos="fade-up"
+//                   data-aos-duration="2000"
+//                   data-aos-delay="200"
+//                 >
+//                   <Fade triggerOnce direction="up" duration={2000} delay={200}>
+//                     <div className="section-detail">
+//                       <h2 className="gi-title">
+//                         Day of the 5 <span>deal</span>
+//                       </h2>
+//                       <p>Don`t wait. The time will never be just right.</p>
+//                     </div>
+//                   </Fade>
+//                   <DealendTimer />
+//                 </div>
+//                 <Fade
+//                   triggerOnce
+//                   direction="up"
+//                   duration={2000}
+//                   delay={200}
+//                   className="gi-deal-block m-minus-lr-12"
+//                 >
+//                   <div className="deal-slick-carousel gi-product-slider slick-initialized slick-slider">
+//                     <div className="slick-list draggable">
+//                       <Swiper
+//                         loop={true}
+//                         autoplay={{ delay: 1000 }}
+//                         slidesPerView={5}
+//                         breakpoints={{
+//                           0: {
+//                             slidesPerView: 1,
+//                           },
+//                           320: {
+//                             slidesPerView: 1,
+//                           },
+//                           425: {
+//                             slidesPerView: 2,
+//                           },
+//                           640: {
+//                             slidesPerView: 2,
+//                           },
+//                           768: {
+//                             slidesPerView: 3,
+//                           },
+//                           1024: {
+//                             slidesPerView: 3,
+//                           },
+//                           1200: {
+//                             slidesPerView: 5,
+//                           },
+//                           1440: {
+//                             slidesPerView: 5,
+//                           },
+//                         }}
+//                         className="slick-track"
+//                       >
+//                         {getData()?.map((item: any, index: number) => (
+//                           <SwiperSlide key={index} className="slick-slide">
+//                             <ItemCard data={item} />
+//                           </SwiperSlide>
+//                         ))}
+//                       </Swiper>
+//                     </div>
+//                   </div>
+//                 </Fade>
+//               </div>
+//             </Col>
+//           </Row>
+//         </div>
+//       </section>
+//     </>
+//   );
+// };
+
+// export default Deal;
+
 "use client";
 import { Col, Row } from "react-bootstrap";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import ItemCard from "../product-item/ItemCard";
 import { Fade } from "react-awesome-reveal";
-import useSWR from "swr";
 import fetcher from "../fetcher-api/Fetcher";
 import DealendTimer from "../dealend-timer/DealendTimer";
 import Spinner from "../button/Spinner";
@@ -13,46 +155,27 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { fetchProductsByStatus } from "@/store/reducers/products/productsSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { mapProductToItem } from "@/utility/Functions";
 
 const Deal = ({
-  onSuccess = () => {},
+  onSuccess = () => { },
   hasPaginate = false,
-  onError = () => {},
+  onError = () => { },
 }) => {
-  const { data, error } = useSWR("/api/deal", fetcher, { onSuccess, onError });
+
+
   const dispatch = useAppDispatch();
+  useEffect(() => {
+    dispatch(fetchProductsByStatus({ type: "dealOfTheDay", page: 1, limit: 10 }));
+  }, [dispatch]);
   const { dealOfTheDay } = useAppSelector(state => state.products.statusProducts);
 
-  // جلب البيانات من Redux
-
-    useEffect(() => {
-  if (dealOfTheDay) {
-    console.log(dealOfTheDay, 'تم جلب البيانات ✅');
-  }
-}, [dealOfTheDay]);
 
 
-  console.log(dealOfTheDay,'444444444');
+
+  const products = dealOfTheDay?.products || [];
 
 
-  useEffect(() => {
-    dispatch(fetchProductsByStatus({ type: "dealOfTheDay", page: 1, limit: 10 }))
-      .unwrap()
-      .then(onSuccess)
-      .catch(onError);
-  },[dispatch] );
-  if (error) return <div>Failed to load products</div>;
-  if (!data)
-    return (
-      <div>
-        <Spinner />
-      </div>
-    );
-
-  const getData = () => {
-    if (hasPaginate) return data.data;
-    else return data;
-  };
 
   return (
     <>
@@ -73,7 +196,7 @@ const Deal = ({
                   <Fade triggerOnce direction="up" duration={2000} delay={200}>
                     <div className="section-detail">
                       <h2 className="gi-title">
-                        Day of the 5 <span>deal</span>
+                        Day of the 4 <span>deal</span>
                       </h2>
                       <p>Don`t wait. The time will never be just right.</p>
                     </div>
@@ -87,48 +210,25 @@ const Deal = ({
                   delay={200}
                   className="gi-deal-block m-minus-lr-12"
                 >
-                  <div className="deal-slick-carousel gi-product-slider slick-initialized slick-slider">
-                    <div className="slick-list draggable">
-                      <Swiper
-                        loop={true}
-                        autoplay={{ delay: 1000 }}
-                        slidesPerView={5}
-                        breakpoints={{
-                          0: {
-                            slidesPerView: 1,
-                          },
-                          320: {
-                            slidesPerView: 1,
-                          },
-                          425: {
-                            slidesPerView: 2,
-                          },
-                          640: {
-                            slidesPerView: 2,
-                          },
-                          768: {
-                            slidesPerView: 3,
-                          },
-                          1024: {
-                            slidesPerView: 3,
-                          },
-                          1200: {
-                            slidesPerView: 5,
-                          },
-                          1440: {
-                            slidesPerView: 5,
-                          },
-                        }}
-                        className="slick-track"
-                      >
-                        {getData()?.map((item: any, index: number) => (
-                          <SwiperSlide key={index} className="slick-slide">
-                            <ItemCard data={item} />
-                          </SwiperSlide>
-                        ))}
-                      </Swiper>
-                    </div>
-                  </div>
+                 <Swiper
+  loop={true}
+  autoplay={{ delay: 3000 }}
+  spaceBetween={20}
+  slidesPerView={5}
+  breakpoints={{
+    0: { slidesPerView: 1 },
+    425: { slidesPerView: 2 },
+    768: { slidesPerView: 3 },
+    1200: { slidesPerView: 5 },
+  }}
+>
+  {products.map((product: any) => (
+    <SwiperSlide key={product._id}>
+      <ItemCard data={mapProductToItem(product)} />
+    </SwiperSlide>
+  ))}
+</Swiper>
+
                 </Fade>
               </div>
             </Col>

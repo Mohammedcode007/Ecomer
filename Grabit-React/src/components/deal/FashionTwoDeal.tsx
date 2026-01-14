@@ -54,7 +54,7 @@ const FashionTwoDeal = ({
                   <Fade direction="up" duration={2000} delay={200} triggerOnce>
                     <div className="section-detail">
                       <h2 className="gi-title">
-                        Day of the <span>deal</span>
+                        Day of the 5 <span>deal</span>
                       </h2>
                       <p>Don{"'"}t wait. The time will never be just right.</p>
                     </div>
@@ -99,11 +99,11 @@ const FashionTwoDeal = ({
                       }}
                       className="deal-slick-carousel gi-product-slider "
                     >
-                      {getData().map((item: any, index: number) => (
+                      {/* {getData().map((item: any, index: number) => (
                         <SwiperSlide key={index} className="swiper-slide-rtl">
                           <ItemCard data={item} />
                         </SwiperSlide>
-                      ))}
+                      ))} */}
                     </Swiper>
                   </Fade>
                 </div>

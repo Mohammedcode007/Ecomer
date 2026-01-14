@@ -1406,11 +1406,11 @@ const CheckOut = ({
                         },
                       }}
                     >
-                      {getData().map((item: any, index: number) => (
+                      {/* {getData().map((item: any, index: number) => (
                         <SwiperSlide key={index}>
                           <ItemCard data={item} />
                         </SwiperSlide>
-                      ))}
+                      ))} */}
                     </Swiper>
                   </Fade>
                 </div>

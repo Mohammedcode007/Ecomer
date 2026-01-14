@@ -4,7 +4,7 @@ import ItemCard from "./ItemCard";
 const FashionItemCard = ({ data }) => {
   return (
     <>
-        <ItemCard data={data} />
+        {/* <ItemCard data={data} /> */}
     </>
   );
 };

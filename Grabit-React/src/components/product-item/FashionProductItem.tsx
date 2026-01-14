@@ -28,7 +28,7 @@ const FashionProductItem = ({
 
   return (
     <>
-      {getData()?.map((item: any, index: number) => (
+      {/* {getData()?.map((item: any, index: number) => (
         <Col
           key={index}
           md={4}
@@ -38,7 +38,7 @@ const FashionProductItem = ({
         >
           <ItemCard data={item} />
         </Col>
-      ))}
+      ))} */}
     </>
   );
 };

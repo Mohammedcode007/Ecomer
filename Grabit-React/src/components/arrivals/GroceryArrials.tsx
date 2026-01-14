@@ -28,7 +28,7 @@ const GroceryArrials = () => {
                 <div className="section-title">
                   <div className="section-detail">
                     <h2 className="gi-title">
-                      New <span>Arrivals</span>
+                      New 4 <span>Arrivals</span>
                     </h2>
                     <p>Shop online for new arrivals and get free shipping!</p>
                   </div>

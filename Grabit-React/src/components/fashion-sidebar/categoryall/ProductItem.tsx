@@ -29,7 +29,7 @@ const ProductItem = ({
 
   return (
     <>
-      {getData()?.map((item: any, index: number) => (
+      {/* {getData()?.map((item: any, index: number) => (
         <Col
           key={index}
           xl={3}
@@ -40,7 +40,7 @@ const ProductItem = ({
         >
             <ItemCard data={item} />
         </Col>
-      ))}
+      ))} */}
     </>
   );
 };

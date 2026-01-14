@@ -139,10 +139,7 @@ exports.getProductsByStatus = async (req, res, next) => {
         .sort(sort)
         .skip((page - 1) * limit)
         .limit(limit)
-        .select(
-          "name price priceBeforeDiscount hasDiscount images ratingsAverage ratingsQuantity salesCount isMostPopular createdAt topSelling topRated trendingItems newArrivals dealOfTheDay"
-        )
-        .populate("category", "name");
+        .populate("category", "name"); // هنا سيظل يجلب اسم التصنيف فقط
 
       const total = await Product.countDocuments(filter);
 
@@ -189,6 +186,7 @@ exports.getProductsByStatus = async (req, res, next) => {
     next(error);
   }
 };
+
 
 
 // جلب كل المنتجات مع pagination وبحث بالاسم وترتيب حسب السعر

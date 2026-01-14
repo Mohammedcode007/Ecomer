@@ -67,7 +67,7 @@ const FashionTwoTopRated = ({
           <div className="section-title">
             <div className="section-detail">
               <h2 className="gi-title">
-                Top <span>Rated</span>
+                Top 4<span>Rated</span>
               </h2>
             </div>
           </div>

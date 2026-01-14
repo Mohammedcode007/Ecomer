@@ -20,7 +20,7 @@ const ShopProductItem = ({
         isGridView ? `col-md-6 col-xs-6 col-sm-6 width-50` : ""
       } ${classCol} mb-6 ${!isList ? "gi-product-box" : ""} pro-gl-content`}
     >
-      <ItemCard data={data} />
+      {/* <ItemCard data={data} /> */}
     </Col>
   );
 };
