@@ -210,24 +210,24 @@ const Deal = ({
                   delay={200}
                   className="gi-deal-block m-minus-lr-12"
                 >
-                 <Swiper
-  loop={true}
-  autoplay={{ delay: 3000 }}
-  spaceBetween={20}
-  slidesPerView={5}
-  breakpoints={{
-    0: { slidesPerView: 1 },
-    425: { slidesPerView: 2 },
-    768: { slidesPerView: 3 },
-    1200: { slidesPerView: 5 },
-  }}
->
-  {products.map((product: any) => (
-    <SwiperSlide key={product._id}>
-      <ItemCard data={mapProductToItem(product)} />
-    </SwiperSlide>
-  ))}
-</Swiper>
+                  <Swiper
+                    loop={true}
+                    autoplay={{ delay: 3000 }}
+                    spaceBetween={20}
+                    slidesPerView={5}
+                    breakpoints={{
+                      0: { slidesPerView: 1 },
+                      425: { slidesPerView: 2 },
+                      768: { slidesPerView: 3 },
+                      1200: { slidesPerView: 5 },
+                    }}
+                  >
+                    {products.map((product: any) => (
+                      <SwiperSlide key={product._id}>
+                        <ItemCard data={mapProductToItem(product)} />
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
 
                 </Fade>
               </div>
