@@ -33,7 +33,6 @@ interface Item {
   quantity: number;
 }
 const ItemCard = ({ data }: any) => {
-  console.log(data);
   
   const [show, setShow] = useState(false);
   const dispatch = useDispatch();

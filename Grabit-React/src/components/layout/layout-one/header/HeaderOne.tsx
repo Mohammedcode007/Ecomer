@@ -5,12 +5,15 @@ import { useState } from "react";
 import SidebarCart from "../../../model/SidebarCart";
 import MobileManuSidebar from "../../../model/MobileManuSidebar";
 import Dropdown from "react-bootstrap/Dropdown";
+import { useAppSelector } from "@/store/hooks";
 
 function HeaderOne({ cartItems, wishlistItems }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeMainMenu, setActiveMainMenu] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  const { data:realData, loading } = useAppSelector(
+    (state) => state.homepage
+  );
   const openCart = () => {
     setIsCartOpen(true);
   };
@@ -44,13 +47,13 @@ function HeaderOne({ cartItems, wishlistItems }) {
                     <Link href="/">
                       <i className="fi fi-rr-phone-call"></i>
                     </Link>
-                    +91 987 654 3210
+                {realData?.phoneNumber}
                   </li>
                   <li className="list-inline-item">
                     <Link href="/">
                       <i className="fi fi-brands-whatsapp"></i>
                     </Link>
-                    +91 987 654 3210
+                {realData?.whatsappNumber}
                   </li>
                 </ul>
               </div>
@@ -59,7 +62,7 @@ function HeaderOne({ cartItems, wishlistItems }) {
                         <!-- Header Top Message Start --> */}
             <div className="col text-center header-top-center">
               <div className="header-top-message">
-                World`s Fastest Online Shopping Destination
+                {realData?.mainTitle}
               </div>
             </div>
             {/* <!-- Header Top Message End -->

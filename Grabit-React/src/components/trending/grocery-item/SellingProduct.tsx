@@ -128,7 +128,6 @@ const SellingProduct = ({
   }, [dispatch]);
   const { topSelling, error } = useAppSelector(state => state.products.statusProducts);
 
-console.log(topSelling,'7777777777');
 
 
 

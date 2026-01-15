@@ -23,7 +23,7 @@ const page = () => {
             <OfferBanners />
             <Services />
             <Trending />
-            <LatestBlog />
+            {/* <LatestBlog /> */}
         </>
     )
 }

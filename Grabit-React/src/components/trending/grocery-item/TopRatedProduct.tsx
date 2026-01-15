@@ -24,7 +24,6 @@ const SellingProduct = ({
   }, [dispatch]);
   const { topRated, error } = useAppSelector(state => state.products.statusProducts);
 
-console.log(topRated,'7777777777');
 
 
 
