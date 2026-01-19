@@ -7,6 +7,7 @@ import fetcher from "@/components/fetcher-api/Fetcher";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Collapse from 'react-bootstrap/Collapse';
+import { useAppSelector } from "@/store/hooks";
 
 const SidebarArea = ({
   handleCategoryChange,
@@ -22,8 +23,8 @@ const SidebarArea = ({
   min,
   max,
   isFilterOpen,
-  onSuccess = () => {},
-  onError = () => {},
+  onSuccess = () => { },
+  onError = () => { },
   hasPaginate = false,
   order = "order-md-last order-lg-first",
   none = "",
@@ -31,7 +32,9 @@ const SidebarArea = ({
   const router = useRouter();
   const pathname = usePathname();
   const [showButton, setShowButton] = useState(true);
-
+  const { categories, loading } = useAppSelector(
+    state => state.categories
+  );
   const [isOpen, setIsOpen] = useState({
     category: true,
     weight: true,
@@ -142,15 +145,16 @@ const SidebarArea = ({
     }));
   };
 
+  console.log(categories);
+
   return (
     <>
       {isFilterOpen && (
         <div className="filter-sidebar-overlay" onClick={closeFilter}></div>
       )}
       <div
-        className={`gi-shop-sidebar col-lg-3 col-md-12 m-t-991 ${
-          ((order = -1), none)
-        }`}
+        className={`gi-shop-sidebar col-lg-3 col-md-12 m-t-991 ${((order = -1), none)
+          }`}
       >
         <div id="shop_sidebar">
           <div className="gi-sidebar-wrap">
@@ -176,33 +180,32 @@ const SidebarArea = ({
                   className={`gi-cat-sub-dropdown gi-sb-block-content height-transition-1s-ease`}
                 >
                   <ul>
-                    {/* Check if data is an array before mapping */}
-                    {categoryData.map((category: any, index: number) => (
-                      <li key={index}>
-                        {/* Assuming ShopCategoryBlock accepts a 'data' prop */}
+                    {loading && <li>Loading...</li>}
+
+                    {!loading && categories.map((category) => (
+                      <li key={category._id}>
                         <div className="gi-sidebar-block-item">
                           <input
-                            checked={selectedCategory?.includes(
-                              category.category
-                            )}
-                            onChange={() =>
-                              handleCategoryChange(category.category)
-                            }
                             type="checkbox"
+                            checked={selectedCategory.includes(category._id)}
+                            onChange={() => handleCategoryChange(category._id)}
                           />
-                          <Link href="/">
+
+                          <Link href={`/shop?categoryId=${category._id}`}>
                             <span>
-                              <i
-                                className={`${renderIcon(category.category)}`}
-                              ></i>
-                              {category.category}
+                              {category.name}
                             </span>
                           </Link>
+
                           <span className="checked"></span>
                         </div>
+
+
+
                       </li>
                     ))}
                   </ul>
+
                 </div>
               </Collapse>
             </div>
@@ -223,7 +226,7 @@ const SidebarArea = ({
               </div>
               <Collapse
                 in={isOpen.weight}
-                
+
               >
                 <div
                   style={{ display: isOpen.weight ? "block" : "none" }}
@@ -263,7 +266,7 @@ const SidebarArea = ({
               </div>
               <Collapse
                 in={isOpen.color}
-                
+
               >
                 <div
                   style={{ display: isOpen.color ? "block" : "none" }}
@@ -289,11 +292,10 @@ const SidebarArea = ({
                                 ? "block"
                                 : "none",
                             }}
-                            className={`${
-                              selectedColor.includes(data.color)
+                            className={`${selectedColor.includes(data.color)
                                 ? "checked"
                                 : ""
-                            }`}
+                              }`}
                           ></span>
                         </div>
                       </li>
@@ -318,7 +320,7 @@ const SidebarArea = ({
               </div>
               <Collapse
                 in={isOpen.price}
-                
+
               >
                 <div
                   style={{ display: isOpen.price ? "block" : "none" }}

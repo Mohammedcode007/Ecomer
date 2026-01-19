@@ -117,6 +117,8 @@ const ItemCard = ({ data }: any) => {
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
+  const token = localStorage.getItem("token");
+
   return (
     <>
       <div className="gi-product-content">
@@ -193,7 +195,10 @@ const ItemCard = ({ data }: any) => {
                   </span>
                 )}
               </span>
-              <div className="gi-pro-actions">
+               
+               {
+                token && (
+                  <div className="gi-pro-actions">
                 <button
                   onClick={() => handleWishlist(data)}
                   className={
@@ -232,6 +237,9 @@ const ItemCard = ({ data }: any) => {
                   <i className="fi-rr-shopping-basket"></i>
                 </button>
               </div>
+                )
+               }
+              
               <div className="gi-pro-option">
                 {data.color1 && data.color2 && data.color3 && (
                   <ul className="colors">

@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { useRouter } from "next/navigation";
 import { logout, setUserData } from "@/store/reducers/registrationSlice";
+import { useAppSelector } from "@/store/hooks";
 
 const HeaderButtom = ({ cartItems, wishlistItems }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -42,6 +43,8 @@ const HeaderButtom = ({ cartItems, wishlistItems }) => {
 
   const handleLogout = () => {
     localStorage.removeItem("login_user");
+        localStorage.removeItem("token");
+
     dispatch(logout());
     router.push("/");
   };
@@ -247,6 +250,7 @@ const HeaderButtom = ({ cartItems, wishlistItems }) => {
                         <span className="gi-btn-stitle">
                           {" "}
                           {isAuthenticated ? "Logout" : "Login"}
+
                         </span>
                       </div>
                     </Link>
@@ -320,7 +324,7 @@ const HeaderButtom = ({ cartItems, wishlistItems }) => {
                       <i className="fi-rr-heart"></i>
                     </div>
                     <div className="gi-btn-desc">
-                      <span className="gi-btn-title">Wishlist</span>
+                      <span className="gi-btn-title">Wishlist5</span>
                       <span className="gi-btn-stitle">
                         <b className="gi-wishlist-count">
                           {wishlistItems.length}

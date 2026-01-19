@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { RootState } from "@/store";
 import { logout, setUserData } from "@/store/reducers/registrationSlice";
 import { setSearchTerm } from "@/store/reducers/filterReducer";
+import { useAppSelector } from "@/store/hooks";
 
 function HeaderTwo({ cartItems, wishlistItems }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -45,9 +46,14 @@ function HeaderTwo({ cartItems, wishlistItems }) {
 
   const handleLogout = () => {
     localStorage.removeItem("login_user");
+        localStorage.removeItem("token");
+
     dispatch(logout());
     router.push("/");
   };
+const token = localStorage.getItem("token");
+
+
 
   return (
     <>
@@ -158,7 +164,8 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                   </div>
                   {/* <!-- Header User End -->
                                 <!-- Header wishlist Start --> */}
-                  <Link
+                                {
+                                  token && (   <Link
                     href="/wishlist"
                     className="gi-header-btn gi-wish-toggle gi-header-rtl-btn"
                     title="Wishlist"
@@ -175,10 +182,12 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                         -items
                       </span>
                     </div>
-                  </Link>
+                  </Link>)
+                                }
+               
                   {/* <!-- Header wishlist End -->
                                 <!-- Header Cart Start --> */}
-                  <Link
+                                {token && ( <Link
                     onClick={openCart}
                     href="#"
                     className="gi-header-btn gi-cart-toggle gi-header-rtl-btn"
@@ -195,7 +204,8 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                         -items
                       </span>
                     </div>
-                  </Link>
+                  </Link>)}
+                 
                   {/* <!-- Header Cart End --> */}
                 </div>
               </div>

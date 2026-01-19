@@ -8,13 +8,16 @@ const {
   deleteProduct,
   getTopRatedProducts,
   getMostPopularProducts,
-    getProductsByStatus // ← استدعاء الدالة الجديدة
-
+  getProductsByCategory,
+  getProductsByStatus
 } = require("../controllers/product.controller");
 const { protect, adminOrOwner } = require("../middlewares/auth.middleware");
+
+// ← Routes الثابتة أولًا
 router.get("/top-rated", getTopRatedProducts);
 router.get("/most-popular", getMostPopularProducts);
-router.get("/status", getProductsByStatus); // ← هنا
+router.get("/status", getProductsByStatus);
+router.get("/by-category", getProductsByCategory); // ← الآن سيأخذ categoryIds من query
 
 // جلب كل المنتجات مع pagination + بحث بالاسم
 router.get("/", getProducts);

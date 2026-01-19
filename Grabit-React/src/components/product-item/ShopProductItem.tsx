@@ -1,6 +1,7 @@
 "use client";
 import { Col } from "react-bootstrap";
 import ItemCard from "./ItemCard";
+import { mapProductToItem } from "@/utility/Functions";
 
 const ShopProductItem = ({
   data,
@@ -20,7 +21,7 @@ const ShopProductItem = ({
         isGridView ? `col-md-6 col-xs-6 col-sm-6 width-50` : ""
       } ${classCol} mb-6 ${!isList ? "gi-product-box" : ""} pro-gl-content`}
     >
-      {/* <ItemCard data={data} /> */}
+          <ItemCard data={mapProductToItem(data)} />
     </Col>
   );
 };

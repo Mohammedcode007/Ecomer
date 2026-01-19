@@ -521,20 +521,19 @@ function HeaderManu() {
                       {categories.map((category, index) => (
                         <Tab key={category._id}>
                           <button
-                            className={`tab nav-link ${
-                              selectedIndex === index ? "active" : ""
-                            }`}
+                            className={`tab nav-link ${selectedIndex === index ? "active" : ""
+                              }`}
                             onClick={() => setSelectedIndex(index)}
                             style={{
                               padding: "10px 40px 10px 20px",
                               marginBottom: "10px",
-                              width:"220px"
+                              width: "220px"
                             }}
                           >
                             {
-                              category.icon ?   <i className={category.icon}></i> :   <i className="fi fi-rr-apps"></i>
+                              category.icon ? <i className={category.icon}></i> : <i className="fi fi-rr-apps"></i>
                             }
-                          
+
                             {category.name}
                           </button>
                         </Tab>
@@ -547,11 +546,10 @@ function HeaderManu() {
                     {categories.map((category, index) => (
                       <Fade key={category._id} duration={400}>
                         <TabPanel
-                          className={`tab-pane fade ${
-                            selectedIndex === index
+                          className={`tab-pane fade ${selectedIndex === index
                               ? "show active product-block"
                               : ""
-                          }`}
+                            }`}
                         >
                           <div className="tab-list row">
                             <div className="col">
@@ -561,6 +559,25 @@ function HeaderManu() {
 
                               <ul className="cat-list">
                                 {category.subCategories &&
+                                  category.subCategories.length > 0 ? (
+                                  category.subCategories.map(sub => (
+                                    <li key={sub._id}>
+                                      <Link
+                                        href={{
+                                          pathname: "/shop-left-sidebar-col-3",
+                                          query: { subCategoryId: sub._id }
+                                        }}
+                                      >
+                                        {sub.name}
+                                      </Link>
+                                    </li>
+                                  ))
+                                ) : (
+                                  <li className="text-muted">
+                                    لا توجد فئات فرعية
+                                  </li>
+                                )}
+                                {/* {category.subCategories &&
                                 category.subCategories.length > 0 ? (
                                   category.subCategories.map(sub => (
                                     <li key={sub._id}>
@@ -575,7 +592,7 @@ function HeaderManu() {
                                   <li className="text-muted">
                                     لا توجد فئات فرعية
                                   </li>
-                                )}
+                                )} */}
                               </ul>
                             </div>
                           </div>
@@ -618,6 +635,8 @@ function HeaderManu() {
                               </Link>
                             </li>
                           ))}
+
+
                         </ul>
                       </li>
                     </ul>

@@ -1,19 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SidebarCart from "../../../model/SidebarCart";
 import MobileManuSidebar from "../../../model/MobileManuSidebar";
 import Dropdown from "react-bootstrap/Dropdown";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchHomepage } from "@/store/reducers/homepage/homepageSlice";
 
 function HeaderOne({ cartItems, wishlistItems }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeMainMenu, setActiveMainMenu] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const dispatch = useAppDispatch();
+  
   const { data:realData, loading } = useAppSelector(
     (state) => state.homepage
   );
+   useEffect(() => {
+      dispatch(fetchHomepage());
+    }, [dispatch]);
+  
   const openCart = () => {
     setIsCartOpen(true);
   };

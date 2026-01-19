@@ -399,3 +399,63 @@ exports.getMostPopularProducts = async (req, res, next) => {
  */
 
 
+// GET /api/products/by-category?categoryIds=id1,id2,id3&page=1&limit=12
+exports.getProductsByCategory = async (req, res, next) => {
+  try {
+    const categoryIdsQuery = req.query.categoryIds; // مثال: "id1,id2,id3"
+    if (!categoryIdsQuery) {
+      res.status(400);
+      throw new Error("يرجى تمرير categoryIds");
+    }
+
+    const categoryIds = categoryIdsQuery.split(",");
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // التأكد من وجود الفئات
+    const categories = await Category.find({ _id: { $in: categoryIds } });
+    if (!categories.length) {
+      res.status(404);
+      throw new Error("الفئات غير موجودة");
+    }
+
+    let allCategoryIds = [];
+    for (let cat of categories) {
+      allCategoryIds.push(cat._id.toString());
+      // إذا كانت فئة رئيسية، أضف الفرعية
+      if (cat.parent === null) {
+        const subs = await Category.find({ parent: cat._id }).select("_id");
+        allCategoryIds.push(...subs.map(s => s._id.toString()));
+      }
+    }
+
+    const totalProducts = await Product.countDocuments({
+      category: { $in: allCategoryIds }
+    });
+
+    const products = await Product.find({
+      category: { $in: allCategoryIds }
+    })
+      .populate("category", "name")
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    res.json({
+      categories: categories.map(c => c.name),
+      pagination: {
+        total: totalProducts,
+        page,
+        limit,
+        totalPages: Math.ceil(totalProducts / limit)
+      },
+      products
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+

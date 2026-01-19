@@ -49,6 +49,16 @@ export interface ProductsByStatus {
   totalPages: number
   totalProducts: number
 }
+export interface ProductsByCategoryResponse {
+  category: string
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+  products: Product[]
+}
 
 interface ProductsState {
   products: Product[]
@@ -56,7 +66,7 @@ interface ProductsState {
   error: string | null
   page: number
   limit: number
-  totalPages: number
+  totalPages: number 
   totalProducts: number
   currentProductLoading: boolean
   currentProductError: string | null
@@ -100,6 +110,29 @@ export const fetchProducts = createAsyncThunk<
     return rejectWithValue(err.response?.data?.message || 'فشل جلب المنتجات')
   }
 })
+export const fetchProductsByCategory = createAsyncThunk<
+  ProductsByCategoryResponse,
+  { categoryIds: string[]; page?: number; limit?: number },
+  { rejectValue: string }
+>(
+  'products/fetchProductsByCategory',
+  async ({ categoryIds, page = 1, limit = 10 }, { rejectWithValue }) => {
+    try {
+      // تحويل المصفوفة إلى سلسلة تفصلها فاصلة
+      const categoryIdsParam = categoryIds.join(',');
+      const res = await axios.get(
+        `/products/by-category`,
+        { params: { categoryIds: categoryIdsParam, page, limit } }
+      );
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || 'فشل جلب المنتجات حسب الفئة'
+      );
+    }
+  }
+);
+
 
 // جلب منتج واحد
 export const fetchProductById = createAsyncThunk<
@@ -252,6 +285,27 @@ const productsSlice = createSlice({
         state.loading = false
         state.error = action.payload ?? 'حدث خطأ غير متوقع'
       })
+      // ============ Fetch Products By Category ============
+.addCase(fetchProductsByCategory.pending, state => {
+  state.loading = true
+  state.error = null
+})
+.addCase(
+  fetchProductsByCategory.fulfilled,
+  (state, action: PayloadAction<ProductsByCategoryResponse>) => {
+    state.loading = false
+    state.products = action.payload.products
+    state.page = action.payload.pagination.page
+    state.limit = action.payload.pagination.limit
+    state.totalPages = action.payload.pagination.totalPages
+    state.totalProducts = action.payload.pagination.total
+  }
+)
+.addCase(fetchProductsByCategory.rejected, (state, action) => {
+  state.loading = false
+  state.error = action.payload ?? 'حدث خطأ غير متوقع'
+})
+
 
       // ============ Fetch Single Product ============
       .addCase(fetchProductById.pending, state => {

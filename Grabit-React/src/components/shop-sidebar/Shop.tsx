@@ -18,6 +18,9 @@ import {
   setSortOption,
 } from "@/store/reducers/filterReducer";
 import Paginantion from "../paginantion/Paginantion";
+import { useSearchParams } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchProductsByCategory } from "@/store/reducers/products/productsSlice";
 
 const Shop = ({
   xl = 4,
@@ -29,7 +32,9 @@ const Shop = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isGridView, setIsGridView] = useState(false);
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
+
   const {
     selectedCategory,
     selectedWeight,
@@ -72,10 +77,10 @@ const Shop = ({
     ]
   );
 
-  const { data, error } = useSWR(
-    ["/api/shopitem", postData],
-    ([url, postData]) => fetcher(url, postData)
-  );
+  // const { data, error } = useSWR(
+  //   ["/api/shopitem", postData],
+  //   ([url, postData]) => fetcher(url, postData)
+  // );
 
   const toggleView = (isGrid: any) => {
     setIsGridView(isGrid);
@@ -138,6 +143,41 @@ const Shop = ({
     setCurrentPage(page);
   };
 
+const searchParams = useSearchParams();
+const subCategoryId = searchParams.get("subCategoryId");
+
+useEffect(() => {
+  if (!selectedCategory?.length && !subCategoryId) return;
+
+  // دمج الـ subCategoryId مع selectedCategory مع تجنب التكرار
+  const categoryIds = subCategoryId
+    ? Array.from(new Set([...selectedCategory, subCategoryId]))
+    : selectedCategory;
+
+  dispatch(
+    fetchProductsByCategory({
+      categoryIds, // <-- المصفوفة المحدثة
+      page: currentPage,
+      limit: itemsPerPage,
+    })
+  );
+}, [dispatch, selectedCategory, subCategoryId, currentPage, itemsPerPage]);
+
+
+const {
+  products,
+  loading,
+  page,
+  error,
+  totalPages,
+  totalProducts
+} = useAppSelector((state) => state.products);
+
+
+useEffect(() => {
+  console.log("Products by category:", products);
+}, [products]);
+console.log(selectedCategory);
   if (error) return <div>Failed to load products</div>;
 
   return (
@@ -194,7 +234,7 @@ const Shop = ({
           {/* <!-- Shop Top End --> */}
 
           {/* <!-- Shop content Start --> */}
-          {!data ? (
+          {!products ? (
             <>
               <Spinner />
             </>
@@ -204,7 +244,7 @@ const Shop = ({
             >
               <div className={`shop-pro-inner ${list}`}>
                 <Row>
-                  {data?.data.map((item: any, index: any) => (
+                  {products.map((item: any, index: any) => (
                     <ShopProductItem
                       isGridView={isGridView}
                       xl={xl}
@@ -216,7 +256,7 @@ const Shop = ({
                 </Row>
               </div>
               {/* <!-- Pagination Start --> */}
-              {!data.data.length ? (
+              {!products.length ? (
                 <div
                   style={{ textAlign: "center" }}
                   className="gi-pro-content cart-pro-title"
@@ -227,13 +267,14 @@ const Shop = ({
                 <div className="gi-pro-pagination">
                   <span>
                     Showing {(currentPage - 1) * itemsPerPage + 1}-
-                    {Math.min(currentPage * itemsPerPage, data.totalItems)} of{" "}
-                    {data.totalItems} item(s)
+                    {Math.min(currentPage * itemsPerPage, totalProducts)} of{" "}
+                    {totalProducts} item(s)
                   </span>
+
 
                   <Paginantion
                     currentPage={currentPage}
-                    totalPages={data.totalPages}
+                    totalPages={totalPages}
                     onPageChange={handlePageChange}
                   />
                 </div>

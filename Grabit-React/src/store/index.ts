@@ -14,6 +14,7 @@ import themeSlice from "./reducers/themeSlice";
 import categoriesReducer from "./reducers/categories/categoriesSlice";
 import productsReducer from "./reducers/products/productsSlice"; // مسار المنتجات
 import homepageReducer from "./reducers/homepage/homepageSlice";
+import authReducer from "./reducers/auth/authSlice"; // ← مسار authSlice.ts الصحيح
 
 // Configure persist for each slice separately
 const persistConfigCart = { key: "cart", storage };
@@ -55,6 +56,8 @@ const rootReducer = combineReducers({
   filter: persistedFilterReducer,
   theme: persistedThemeReducer,
     categories: categoriesReducer,
+      auth: authReducer, // ← إضافة authSlice هنا
+
       homepage: homepageReducer, // ← إضافة الصفحة الرئيسية
 
       products: productsReducer, // ← إضافة منتجات
