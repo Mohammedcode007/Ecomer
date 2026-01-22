@@ -37,44 +37,6 @@ exports.getCart = async (req, res, next) => {
 };
 
 
-// إضافة منتج للعربة
-// exports.addToCart = async (req, res, next) => {
-//   try {
-//     const { productId, quantity = 1 } = req.body;
-
-//     const product = await Product.findById(productId);
-//     if (!product) {
-//       res.status(404);
-//       throw new Error("المنتج غير موجود");
-//     }
-
-//     let cart = await Cart.findOne({ user: req.user._id });
-
-//     if (!cart) {
-//       cart = await Cart.create({
-//         user: req.user._id,
-//         items: [{ product: productId, quantity }]
-//       });
-//     } else {
-//       const itemIndex = cart.items.findIndex(
-//         item => item.product.toString() === productId
-//       );
-
-//       if (itemIndex > -1) {
-//         cart.items[itemIndex].quantity += quantity;
-//       } else {
-//         cart.items.push({ product: productId, quantity });
-//       }
-
-//       await cart.save();
-//     }
-
-//     res.status(200).json(cart);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
 exports.addToCart = async (req, res, next) => {
   try {
     const { productId, quantity = 1, size } = req.body;

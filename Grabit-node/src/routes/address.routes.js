@@ -15,6 +15,6 @@ router.post("/", protect, addAddress); // إضافة عنوان
 router.put("/:id", protect, updateAddress); // تحديث عنوان
 router.delete("/:id", protect, deleteAddress); // حذف عنوان
 router.get("/user/:userId", protect, getUserAddresses);
-router.get("/", protect, getMyAddresses);    // جلب كل العناوين للمستخدم الحالي
+router.get("/me", protect, getMyAddresses);    // جلب كل العناوين للمستخدم الحالي
 
 module.exports = router;

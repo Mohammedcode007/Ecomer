@@ -43,21 +43,28 @@ exports.createOrder = async (req, res, next) => {
         );
       }
 
-      totalPrice += product.price * item.quantity;
+      // إجمالي السعر بعد خصم الكوبون لكل منتج
+      const discountedPrice = item.discountAmount
+        ? product.price * item.quantity - item.discountAmount
+        : product.price * item.quantity;
+
+      totalPrice += discountedPrice;
 
       orderItems.push({
         product: product._id,
         size: item.size,
         quantity: item.quantity,
-        price: product.price
+        price: product.price,
+        discountAmount: item.discountAmount || 0, // نسخ الخصم
+        coupon: item.coupon || null
       });
     }
 
     const order = await Order.create({
       user: req.user._id,
       items: orderItems,
-      totalPrice,
-      address: addressId // ⭐ الحل هنا
+      totalPrice, // السعر بعد الخصم
+      address: addressId
     });
 
     // خصم المخزون
@@ -77,7 +84,9 @@ exports.createOrder = async (req, res, next) => {
       );
     }
 
+    // مسح العربة بعد إنشاء الطلب
     cart.items = [];
+    cart.totalPrice = 0;
     await cart.save();
 
     res.status(201).json({
@@ -89,6 +98,7 @@ exports.createOrder = async (req, res, next) => {
     next(error);
   }
 };
+
 
 
 // جلب كل الطلبات للمستخدم الحالي
@@ -132,7 +142,7 @@ exports.updateOrderStatus = async (req, res, next) => {
     const { id } = req.params;      // معرف الطلب
     const { status } = req.body;    // الحالة الجديدة
 
-    const allowedStatus = ["pending", "processing", "completed", "cancelled"];
+    const allowedStatus = ["pending", "processing","inway", "completed", "cancelled"];
     if (!allowedStatus.includes(status)) {
       res.status(400);
       throw new Error("الحالة غير صالحة");

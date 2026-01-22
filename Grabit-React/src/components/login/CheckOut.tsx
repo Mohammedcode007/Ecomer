@@ -16,21 +16,32 @@ import { addOrder, clearCart, setOrders } from "@/store/reducers/cartSlice";
 import { login } from "@/store/reducers/registrationSlice";
 import { showErrorToast, showSuccessToast } from "../toast-popup/Toastify";
 import DiscountCoupon from "../discount-coupon/DiscountCoupon";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { mapProductToItem } from "@/utility/Functions";
+import { applyCoupon } from "@/store/reducers/coupon/couponSlice";
+import { CartItem, removeFromCart, updateCartItem } from "@/store/reducers/cart/cartSlice";
+import { addAddress, deleteAddress, fetchMyAddresses } from "@/store/reducers/address/addressSlice";
+import { createOrder, fetchMyOrders } from "@/store/reducers/orders/ordersSlice";
 
-interface Address {
-  id: string;
-  firstName: string;
-  lastName: string;
-  address: string;
-  city: string;
-  postalCode: string;
+export interface Address {
+  _id: string;
+  user: string;
+  type: string;
   country: string;
-  state: string;
+  city: string;
+  street: string;
+  postalCode: string;
+  details?: string;
+  phone: string;
+  deliveryStart?: string;
+  deliveryEnd?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
+
 interface Registration {
-  firstName: string;
-  lastName: string;
+  details: string;
   email: string;
   phoneNumber: string;
   address: string;
@@ -42,15 +53,7 @@ interface Registration {
   uid: any;
 }
 
-interface FormData {
-  firstName: string;
-  lastName: string;
-  address: string;
-  city: string;
-  postalCode: string;
-  country: string;
-  state: string;
-}
+
 
 interface Country {
   id: string;
@@ -71,20 +74,24 @@ interface City {
 }
 
 const CheckOut = ({
-  onSuccess = () => {},
+  onSuccess = () => { },
   hasPaginate = false,
-  onError = () => {},
+  onError = () => { },
 }) => {
   const [email, setEmail] = useState("");
   const [validated, setValidated] = useState(false);
   const [password, setPassword] = useState("");
+    const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+
+    const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+console.log(selectedAddress,'88888');
+
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
     confirmPassword?: string;
-    firstName?: string;
-    lastName?: string;
+    details?: string;
     address?: string;
     phoneNumber?: string;
     postalCode?: string;
@@ -92,10 +99,30 @@ const CheckOut = ({
     state?: string;
     city?: string;
   }>({});
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+
   const router = useRouter();
   const cartItems = useSelector((state: RootState) => state.cart.items);
   const orders = useSelector((state: RootState) => state.cart.orders);
+  const cart = useSelector((state: RootState) => state.cartRealData);
+  const { error: couponError, totalDiscount } = useSelector((state: RootState) => state.coupon);
+
+  const { items } = cart;
+  const [mappedItems, setMappedItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!items || items.length === 0) {
+      setMappedItems([]);
+      return;
+    }
+
+    const mapped = items.map((item: CartItem) => ({
+      ...mapProductToItem(item.product),
+      quantity: item.quantity,
+    }));
+
+    setMappedItems(mapped);
+  }, [items]);
   const isLogin = useSelector(
     (state: RootState) => state.registration.isAuthenticated
   );
@@ -110,7 +137,7 @@ const CheckOut = ({
   const [optionVisible, setOptionVisible] = useState(true);
   const [loginVisible, setLoginVisible] = useState(false);
   const [btnVisible, setBtnVisible] = useState(true);
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  
   const [filteredCountryData, setFilteredCountryData] = useState<Country[]>([]);
   const [filteredStateData, setFilteredStateData] = useState<State[]>([]);
   const [filteredCityData, setFilteredCityData] = useState<City[]>([]);
@@ -119,15 +146,16 @@ const CheckOut = ({
   const [isTermsChecked, setIsTermsChecked] = useState(false);
   const checkboxRef = useRef<HTMLInputElement>(null);
 
+  const [couponCode, setCouponCode] = useState("");
   const [formData, setFormData]: any = useState({
-    id: "",
-    firstName: "",
-    lastName: "",
-    address: "",
-    city: "",
-    postalCode: "",
+    details: "",
+    address: "",   // يمكنك إزالة هذا أو تركه كحقل اختياري
+    street: "",    // جديد
+    phone: "",     // جديد
     country: "",
     state: "",
+    city: "",
+    postalCode: "",
   });
 
   const { data: country } = useSWR("/api/country", fetcher, {
@@ -135,16 +163,12 @@ const CheckOut = ({
     onError,
   });
 
-  useEffect(() => {
-    const existingAddresses = JSON.parse(
-      localStorage.getItem("shippingAddresses") || "[]"
-    );
-    setAddressVisible(existingAddresses);
+//   useEffect(() => {
+//  if(selectedAddress)
+//     setSelectedAddressId(selectedAddress?._id);
 
-    if (existingAddresses.length > 0 && !selectedAddress) {
-      setSelectedAddress(existingAddresses[0]);
-    }
-  }, [selectedAddress]);
+  
+//   }, [selectedAddress]);
 
   useEffect(() => {
     if (selectedAddress) {
@@ -210,65 +234,6 @@ const CheckOut = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const form = e.currentTarget;
-    if (form.checkValidity() === false) {
-      e.stopPropagation();
-      setValidated(true);
-      return;
-    }
-
-    formData.id = `${Date.now()}`;
-
-    const existingAddresses = JSON.parse(
-      localStorage.getItem("shippingAddresses") || "[]"
-    );
-
-    let updatedAddresses;
-    if (existingAddresses.length === 0) {
-      updatedAddresses = [formData];
-      setSelectedAddress(formData);
-    } else {
-      updatedAddresses = [...existingAddresses, formData];
-    }
-
-    localStorage.setItem("shippingAddresses", JSON.stringify(updatedAddresses));
-    setAddressVisible(updatedAddresses);
-    setSelectedAddress(formData);
-
-    setFormData({
-      id: "",
-      firstName: "",
-      lastName: "",
-      address: "",
-      city: "",
-      postalCode: "",
-      country: "",
-      state: "",
-    });
-
-    const requiredFields = [
-      "firstName",
-      "lastName",
-      "address",
-      "country",
-      "state",
-      "city",
-      "postalCode",
-    ];
-
-    for (const field of requiredFields) {
-      if (!formData[field]) {
-        setValidated(true);
-        return;
-      }
-    }
-
-    setValidated(false);
-  };
-
   const handleInputChange = (e: any, additionalValue: string = "") => {
     const { name, value } = e.target;
 
@@ -295,7 +260,6 @@ const CheckOut = ({
   }, []);
 
   // item Price
-
   useEffect(() => {
     if (cartItems.length === 0) {
       setSubTotal(0);
@@ -307,34 +271,26 @@ const CheckOut = ({
       (acc, item) => acc + item.newPrice * item.quantity,
       0
     );
+
     setSubTotal(subtotal);
-    // Calculate VAT
-    const vatAmount = subtotal * 0.2;
-    setVat(vatAmount);
-  }, [cartItems]);
+
+    // مبلغ توصيل ثابت
+    setVat(50); // ← غير الرقم حسب المطلوب
+  }, [items]);
+
+
 
   const handleDiscountApplied = (discount) => {
     setDiscount(discount);
   };
 
   const discountAmount = subTotal * (discount / 100);
-  const total = subTotal + vat - discountAmount;
   // item Price end
 
   const { data, error } = useSWR("/api/deal", fetcher, { onSuccess, onError });
 
-  if (error) return <div>Failed to load products</div>;
-  if (!data)
-    return (
-      <div>
-        <Spinner />
-      </div>
-    );
 
-  const getData = () => {
-    if (hasPaginate) return data.data;
-    else return data;
-  };
+
 
   const generateRandomId = () => {
     const randomNum = Math.floor(Math.random() * 100000);
@@ -342,51 +298,81 @@ const CheckOut = ({
   };
 
   const randomId = generateRandomId();
-
-  const handleCheckout = () => {
-    if (!isTermsChecked) {
+  const handleCreateOrder = async () => {
+        if (!isTermsChecked) {
       showErrorToast("Please agree to the Terms & Conditions.");
       checkboxRef.current?.focus();
       return;
     }
-
-    if (!selectedAddress) {
+       if (!selectedAddress) {
       showErrorToast("Please select a billing address.");
       return;
     }
-
-    const newOrder = {
-      orderId: randomId,
-      date: new Date().getTime(),
-      shippingMethod: selectedMethod,
-      totalItems: cartItems.length,
-      totalPrice: total,
-      status: "Pending",
-      products: cartItems,
-      address: selectedAddress,
-    };
-
-    const orderExists = orders.some(
-      (order: any) => order.id === newOrder.orderId
-    );
-
-    if (!orderExists) {
-      dispatch(addOrder(newOrder));
-    } else {
-      console.log(
-        `Order with ID ${newOrder.orderId} already exists and won't be added again.`
-      );
+    if (!selectedAddress) {
+      alert('يرجى اختيار عنوان');
+      return;
     }
-    dispatch(clearCart());
 
-    router.push("/orders");
+    try {
+      const resultAction = await dispatch(createOrder({ addressId: selectedAddress?._id }));
+
+      if (createOrder.fulfilled.match(resultAction)) {
+        alert('تم إنشاء الطلب بنجاح!');
+        // إعادة جلب الطلبات بعد الإنشاء
+        dispatch(fetchMyOrders());
+      } else {
+        alert(resultAction.payload || 'فشل إنشاء الطلب');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء إنشاء الطلب');
+    }
   };
 
-  const handleRemoveAddress = (index: number) => {
-    const updatedAddresses = addressVisible.filter((_, i) => i !== index);
-    localStorage.setItem("shippingAddresses", JSON.stringify(updatedAddresses));
-    setAddressVisible(updatedAddresses);
+  // const handleCheckout = () => {
+  //   if (!isTermsChecked) {
+  //     showErrorToast("Please agree to the Terms & Conditions.");
+  //     checkboxRef.current?.focus();
+  //     return;
+  //   }
+
+  //   if (!selectedAddress) {
+  //     showErrorToast("Please select a billing address.");
+  //     return;
+  //   }
+
+  //   const newOrder = {
+  //     orderId: randomId,
+  //     date: new Date().getTime(),
+  //     shippingMethod: selectedMethod,
+  //     totalItems: cartItems.length,
+  //     totalPrice: total,
+  //     status: "Pending",
+  //     products: cartItems,
+  //     address: selectedAddress,
+  //   };
+
+  //   const orderExists = orders.some(
+  //     (order: any) => order.id === newOrder.orderId
+  //   );
+
+  //   if (!orderExists) {
+  //     dispatch(addOrder(newOrder));
+  //   } else {
+  //     console.log(
+  //       `Order with ID ${newOrder.orderId} already exists and won't be added again.`
+  //     );
+  //   }
+  //   dispatch(clearCart());
+
+  //   router.push("/orders");
+  // };
+  const handleDelete = (id: string) => {
+    if (window.confirm("هل أنت متأكد من حذف هذا العنوان؟")) {
+      dispatch(deleteAddress(id));
+    }
   };
+
 
   const handleSelectAddress = (address: any) => {
     setSelectedAddress(address);
@@ -472,13 +458,103 @@ const CheckOut = ({
     handleInputChange(e);
   };
 
+  useEffect(() => {
+    const subtotal = items.reduce(
+      (acc, item) => acc + item.product.price * item.quantity,
+      0
+    );
+
+    const totalDiscount = items.reduce(
+      (acc, item) => acc + (item.discountAmount || 0),
+      0
+    );
+
+    setSubTotal(subtotal - totalDiscount);
+  }, [items]);
+
+  const handleUpdateQuantity = (productId: string, quantity: number) => {
+    dispatch(updateCartItem({ productId, quantity }));
+  };
+
+  const handleRemoveItem = (productId: string) => {
+    dispatch(removeFromCart(productId));
+  };
+
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) return;
+    dispatch(applyCoupon(couponCode));
+  };
+
+  // تحديث حساب Sub-Total بدون خصم كل عنصر
+  useEffect(() => {
+    const subtotal = items.reduce(
+      (acc, item) => acc + item.product.price * item.quantity,
+      0
+    );
+    setSubTotal(subtotal);
+  }, [items]);
+
+  const total =
+    subTotal -
+    (totalDiscount || 0) +
+    vat;
+  const { addresses, loading } = useAppSelector((state) => state.address);
+
+
+
+  // جلب العناوين عند التحميل
+  useEffect(() => {
+    dispatch(fetchMyAddresses());
+  }, [dispatch]);
+
+  // تغيير بيانات الفورم
+  // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  //   setFormData({ ...formData, [e.target.name]: e.target.value });
+  // };
+
+  // إرسال الفورم لإضافة عنوان جديد
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setValidated(true);
+
+    if (e.currentTarget.checkValidity() === false) {
+      e.stopPropagation();
+      return;
+    }
+
+    try {
+      await dispatch(addAddress(formData)).unwrap(); // إضافة العنوان
+      alert("تم إضافة العنوان بنجاح");
+      setFormData({
+        details: "",
+        address: "",
+        country: "",
+        state: "",
+        city: "",
+        postalCode: "",
+      });
+      setValidated(false);
+    } catch (err: any) {
+      alert(err || "فشل إضافة العنوان");
+    }
+  };
+
+  if (error) return <div>Failed to load products</div>;
+  if (!data)
+    return (
+      <div>
+        <Spinner />
+      </div>
+    );
+
   return (
     <>
       <Breadcrumb title={"Checkout"} />
       <section className="gi-checkout-section padding-tb-40">
         <h2 className="d-none">Checkout Page</h2>
         <div className="container">
-          {cartItems.length === 0 ? (
+          {mappedItems.length === 0 ? (
             <div
               style={{
                 textAlign: "center",
@@ -502,6 +578,30 @@ const CheckOut = ({
                       <h3 className="gi-sidebar-title">Summary</h3>
                     </div>
                     <div className="gi-sb-block-content">
+                      <div className="gi-checkout-summary">
+                        <div>
+                          <span className="text-left">Sub-Total</span>
+                          <span className="text-right">${subTotal.toFixed(2)}</span>
+                        </div>
+
+                        <div>
+                          <span className="text-left">Delivery Charges</span>
+                          <span className="text-right">${vat.toFixed(2)}</span>
+                        </div>
+
+                        {totalDiscount > 0 && (
+                          <div>
+                            <span className="text-left">Discount</span>
+                            <span className="text-right">-${totalDiscount.toFixed(2)}</span>
+                          </div>
+                        )}
+
+                        <div className="gi-checkout-total">
+                          <strong>Total</strong>
+                          <strong>${total.toFixed(2)}</strong>
+                        </div>
+                      </div>
+
                       <div className="gi-checkout-summary">
                         <div>
                           <span className="text-left">Sub-Total</span>
@@ -549,51 +649,7 @@ const CheckOut = ({
                           </span>
                         </div>
                       </div>
-                      <div className="gi-checkout-pro">
-                        {cartItems.map((item: any, index: number) => (
-                          <div key={index} className="col-sm-12 mb-6">
-                            <div className="gi-product-inner">
-                              <div className="gi-pro-image-outer">
-                                <div className="gi-pro-image">
-                                  <a
-                                    href="/product-left-sidebar"
-                                    className="image"
-                                  >
-                                    <img
-                                      className="main-image"
-                                      src={item.image}
-                                      alt="Product"
-                                    />
-                                    <img
-                                      className="hover-image"
-                                      src={item.imageTwo}
-                                      alt="Product"
-                                    />
-                                  </a>
-                                </div>
-                              </div>
-                              <div className="gi-pro-content">
-                                <h5 className="gi-pro-title">
-                                  <a href="/product-left-sidebar">
-                                    {item.title}
-                                  </a>
-                                </h5>
-                                <div className="gi-pro-rating">
-                                  <StarRating rating={item.rating} />
-                                </div>
-                                <span className="gi-price">
-                                  <span className="old-price">
-                                    ${item.oldPrice}.00{" "}
-                                  </span>
-                                  <span className="new-price">
-                                    ${item.newPrice}.00
-                                  </span>
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+
                     </div>
                   </div>
                   {/* <!-- Sidebar Summary Block --> */}
@@ -897,7 +953,7 @@ const CheckOut = ({
                     {billingVisible && (
                       <div className="gi-checkout-wrap m-b-30 padding-bottom-3">
                         <div className="gi-checkout-block gi-check-bill">
-                          <h3 className="gi-checkout-title">Billing Details</h3>
+                          <h3 className="gi-checkout-title">Billing details</h3>
                           <div className="gi-bl-block-content">
                             <div className="gi-check-subtitle">
                               Checkout Options
@@ -934,185 +990,134 @@ const CheckOut = ({
                                 </label>
                               </span>
                             </span>
-                            {(billingMethod === "new" ||
-                              addressVisible.length === 0) && (
+                            {(billingMethod === "new" || addressVisible.length === 0) && (
                               <div className="gi-check-bill-form">
-                                <Form
-                                  noValidate
-                                  validated={validated}
-                                  onSubmit={handleSubmit}
-                                  action="#"
-                                  method="post"
-                                >
-                                  <span
-                                    style={{ marginTop: "10px" }}
-                                    className="gi-bill-wrap gi-bill-half"
-                                  >
-                                    <label>First Name*</label>
+                                <Form noValidate validated={validated} onSubmit={handleSubmit}>
+                                  {/* First Name */}
+
+
+                                  {/* Last Name */}
+                                  <span className="gi-bill-wrap gi-bill-half" style={{ marginTop: "10px" }}>
+                                    <label>details *</label>
                                     <Form.Group>
                                       <Form.Control
                                         type="text"
-                                        name="firstName"
-                                        placeholder="Enter your first name"
-                                        required
-                                        value={formData.firstName}
-                                        onChange={handleInputChange}
-                                      />
-                                      <Form.Control.Feedback type="invalid">
-                                        Please Enter First Name.
-                                      </Form.Control.Feedback>
-                                    </Form.Group>
-                                  </span>
-                                  <span
-                                    style={{ marginTop: "10px" }}
-                                    className="gi-bill-wrap gi-bill-half"
-                                  >
-                                    <label>Last Name*</label>
-                                    <Form.Group>
-                                      <Form.Control
-                                        type="text"
-                                        name="lastName"
-                                        placeholder="Enter your last name"
-                                        required
-                                        value={formData.lastName}
-                                        onChange={handleInputChange}
-                                      />
-                                      <Form.Control.Feedback type="invalid">
-                                        Please Enter Last Name.
-                                      </Form.Control.Feedback>
-                                    </Form.Group>
-                                  </span>
-                                  <span
-                                    style={{ marginTop: "10px" }}
-                                    className="gi-bill-wrap"
-                                  >
-                                    <label>Address</label>
-                                    <Form.Group>
-                                      <Form.Control
-                                        type="text"
-                                        name="address"
-                                        placeholder="Address Line 1"
-                                        value={formData.address}
+                                        name="details"
+                                        placeholder="Enter your details"
+                                        value={formData.details}
                                         onChange={handleInputChange}
                                         required
                                       />
                                       <Form.Control.Feedback type="invalid">
-                                        Please Enter Address.
+                                        Please enter details.
                                       </Form.Control.Feedback>
                                     </Form.Group>
                                   </span>
-                                  <Form.Group
-                                    style={{ marginTop: "10px" }}
-                                    className="gi-bill-wrap gi-bill-half"
-                                  >
-                                    <label>Country</label>
-                                    <span className="gi-bl-select-inner">
-                                      <Form.Select
-                                        size="sm"
-                                        style={{ width: "1px" }}
-                                        name="country"
-                                        id="gi-select-state"
-                                        className="gi-bill-select"
-                                        defaultValue={formData.country}
-                                        onChange={handleCountryChange}
-                                        isInvalid={
-                                          validated && !formData.country
-                                        }
+
+                                  {/* Phone */}
+                                  <span className="gi-bill-wrap gi-bill-half" style={{ marginTop: "10px" }}>
+                                    <label>Phone *</label>
+                                    <Form.Group>
+                                      <Form.Control
+                                        type="text"
+                                        name="phone"
+                                        placeholder="Enter your phone number"
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
                                         required
-                                      >
-                                        <option value="" disabled>
-                                          Country
-                                        </option>
-                                        {filteredCountryData.map(
-                                          (country: any, index: number) => (
-                                            <option
-                                              key={index}
-                                              value={country.iso2}
-                                            >
-                                              {country.countryName}
-                                            </option>
-                                          )
-                                        )}
-                                      </Form.Select>
-                                    </span>
+                                      />
+                                      <Form.Control.Feedback type="invalid">
+                                        Please enter Phone Number.
+                                      </Form.Control.Feedback>
+                                    </Form.Group>
+                                  </span>
+
+                                  {/* Street */}
+                                  <span className="gi-bill-wrap" style={{ marginTop: "10px" }}>
+                                    <label>Street *</label>
+                                    <Form.Group>
+                                      <Form.Control
+                                        type="text"
+                                        name="street"
+                                        placeholder="Enter street address"
+                                        value={formData.street}
+                                        onChange={handleInputChange}
+                                        required
+                                      />
+                                      <Form.Control.Feedback type="invalid">
+                                        Please enter Street Address.
+                                      </Form.Control.Feedback>
+                                    </Form.Group>
+                                  </span>
+
+                                  {/* Country */}
+                                  <Form.Group className="gi-bill-wrap gi-bill-half" style={{ marginTop: "10px" }}>
+                                    <label>Country *</label>
+                                    <Form.Select
+                                      name="country"
+                                      value={formData.country}
+                                      onChange={handleCountryChange}
+                                      isInvalid={validated && !formData.country}
+                                      required
+                                      className="gi-bill-select"
+                                    >
+                                      <option value="" disabled>Country</option>
+                                      {filteredCountryData.map((country: any, index: number) => (
+                                        <option key={index} value={country.iso2}>{country.countryName}</option>
+                                      ))}
+                                    </Form.Select>
+                                    <Form.Control.Feedback type="invalid">Please select Country.</Form.Control.Feedback>
                                   </Form.Group>
-                                  <span
-                                    style={{ marginTop: "10px" }}
-                                    className="gi-bill-wrap gi-bill-half"
-                                  >
-                                    <label>Region State</label>
-                                    <Form.Group className="gi-bl-select-inner">
+
+                                  {/* State */}
+                                  <span className="gi-bill-wrap gi-bill-half" style={{ marginTop: "10px" }}>
+                                    <label>Region/State *</label>
+                                    <Form.Group>
                                       <Form.Select
-                                        size="sm"
-                                        style={{ width: "1px" }}
                                         name="state"
-                                        id="gi-select-state"
-                                        className="gi-bill-select"
-                                        defaultValue={formData.state}
+                                        value={formData.state}
                                         onChange={handleStateChange}
                                         required
+                                        className="gi-bill-select"
                                       >
-                                        <option value="" disabled>
-                                          Region/State
-                                        </option>
+                                        <option value="" disabled>Region/State</option>
                                         {loadingStates ? (
                                           <option disabled>Loading...</option>
                                         ) : (
-                                          filteredStateData.map(
-                                            (state: any, index) => (
-                                              <option
-                                                key={index}
-                                                value={state.state_code}
-                                              >
-                                                {state.StateName}
-                                              </option>
-                                            )
-                                          )
+                                          filteredStateData.map((state: any, index) => (
+                                            <option key={index} value={state.state_code}>{state.StateName}</option>
+                                          ))
                                         )}
                                       </Form.Select>
                                     </Form.Group>
                                   </span>
-                                  <span
-                                    style={{ marginTop: "10px" }}
-                                    className="gi-bill-wrap gi-bill-half"
-                                  >
+
+                                  {/* City */}
+                                  <span className="gi-bill-wrap gi-bill-half" style={{ marginTop: "10px" }}>
                                     <label>City *</label>
-                                    <Form.Group className="gi-bl-select-inner">
+                                    <Form.Group>
                                       <Form.Select
-                                        size="sm"
-                                        style={{ width: "1px" }}
                                         name="city"
-                                        id="gi-select-city"
-                                        className="gi-bill-select"
-                                        defaultValue={formData.city}
+                                        value={formData.city}
                                         onChange={handleCityChange}
                                         required
+                                        className="gi-bill-select"
                                       >
-                                        <option value="" disabled>
-                                          City
-                                        </option>
+                                        <option value="" disabled>City</option>
                                         {loadingCities ? (
                                           <option disabled>Loading...</option>
                                         ) : (
-                                          filteredCityData.map(
-                                            (city: any, index) => (
-                                              <option
-                                                key={index}
-                                                value={city.iso2}
-                                              >
-                                                {city.CityName}
-                                              </option>
-                                            )
-                                          )
+                                          filteredCityData.map((city: any, index) => (
+                                            <option key={index} value={city.iso2}>{city.CityName}</option>
+                                          ))
                                         )}
                                       </Form.Select>
                                     </Form.Group>
                                   </span>
-                                  <span
-                                    style={{ marginTop: "10px" }}
-                                    className="gi-bill-wrap gi-bill-half"
-                                  >
-                                    <label>Post Code</label>
+
+                                  {/* Postal Code */}
+                                  <span className="gi-bill-wrap gi-bill-half" style={{ marginTop: "10px" }}>
+                                    <label>Post Code *</label>
                                     <Form.Group>
                                       <Form.Control
                                         type="text"
@@ -1124,11 +1129,13 @@ const CheckOut = ({
                                         required
                                       />
                                       <Form.Control.Feedback type="invalid">
-                                        Please Enter 05-06 digit number.
+                                        Please enter 5-6 digit number.
                                       </Form.Control.Feedback>
                                     </Form.Group>
                                   </span>
-                                  <span className="gi-check-order-btn">
+
+                                  {/* Submit Button */}
+                                  <span className="gi-check-order-btn" style={{ marginTop: "20px" }}>
                                     <button type="submit" className="gi-btn-2">
                                       Add
                                     </button>
@@ -1136,195 +1143,100 @@ const CheckOut = ({
                                 </Form>
                               </div>
                             )}
-                            {billingMethod === "use" &&
-                              addressVisible.length > 0 && (
-                                <>
-                                  <div className="gi-checkout-block gi-check-bill">
-                                    <div className="gi-sidebar-block">
-                                      <div className="gi-sb-title">
-                                        <h3 className="gi-sidebar-title">
-                                          Address
-                                        </h3>
-                                      </div>
-                                      <div className="gi-sb-block-content">
-                                        <div className="gi-checkout-pay">
-                                          {selectedAddress === null && (
-                                            <div
-                                              style={{ marginBottom: "15px" }}
-                                              className="gi-pay-desc"
-                                            >
-                                              Please select the preferred
-                                              Address to use on this order.
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <ul>
-                                      {addressVisible.map((address, index) => (
-                                        <li key={index}>
-                                          <div
-                                            style={{
-                                              padding: "10px",
-                                              background: "transparent",
-                                              position: "relative",
-                                            }}
-                                            className="bill-box m-b-30"
-                                          >
-                                            <div>
-                                              <div
-                                                style={{
-                                                  position: "absolute",
-                                                  top: "10px",
-                                                  left: "10px",
-                                                }}
-                                                className="checkboxes__item"
-                                              >
-                                                <label className="checkbox style-c">
-                                                  <input
-                                                    value=""
-                                                    type="checkbox"
-                                                    checked={
-                                                      selectedAddress != null &&
-                                                      selectedAddress.id ===
-                                                        address.id
-                                                    }
-                                                    onChange={() =>
-                                                      handleSelectAddress(
-                                                        address
-                                                      )
-                                                    }
-                                                  />
-                                                  <div className="checkbox__checkmark"></div>
-                                                  <div className="checkbox__body"></div>
-                                                </label>
-                                              </div>
-                                              <Row
-                                                style={{ padding: "0 30px" }}
-                                              >
-                                                <Col
-                                                  style={{ lineHeight: "25px" }}
-                                                  lg={6}
-                                                  md={6}
-                                                  sm={12}
-                                                >
-                                                  <div className="gi-single-list">
-                                                    <ul>
-                                                      <li>
-                                                        <strong className="gi-check-subtitle">
-                                                          Name :
-                                                        </strong>{" "}
-                                                        <span
-                                                          style={{
-                                                            color: "#777",
-                                                          }}
-                                                        >
-                                                          {address.firstName}{" "}
-                                                          {address.lastName}{" "}
-                                                        </span>
-                                                      </li>
-                                                      <li>
-                                                        <strong className="gi-check-subtitle">
-                                                          Address :
-                                                        </strong>{" "}
-                                                        <span
-                                                          style={{
-                                                            color: "#777",
-                                                          }}
-                                                        >
-                                                          {address.address}
-                                                        </span>
-                                                      </li>
-                                                      <li>
-                                                        <strong className="gi-check-subtitle">
-                                                          PostalCode :
-                                                        </strong>{" "}
-                                                        <span
-                                                          style={{
-                                                            color: "#777",
-                                                          }}
-                                                        >
-                                                          {address.postalCode}
-                                                        </span>
-                                                      </li>
-                                                    </ul>
-                                                  </div>
-                                                </Col>
-                                                <Col
-                                                  style={{ lineHeight: "25px" }}
-                                                  lg={6}
-                                                  md={6}
-                                                  sm={12}
-                                                >
-                                                  <div className="gi-single-list">
-                                                    <ul>
-                                                      <li>
-                                                        <strong className="gi-check-subtitle">
-                                                          Country :
-                                                        </strong>{" "}
-                                                        <span
-                                                          style={{
-                                                            color: "#777",
-                                                          }}
-                                                        >
-                                                          {address.countryName}
-                                                        </span>
-                                                      </li>
-                                                      <li>
-                                                        <strong className="gi-check-subtitle">
-                                                          State :
-                                                        </strong>{" "}
-                                                        <span
-                                                          style={{
-                                                            color: "#777",
-                                                          }}
-                                                        >
-                                                          {address.stateName}
-                                                        </span>
-                                                      </li>
-                                                      <li>
-                                                        <strong className="gi-check-subtitle">
-                                                          City :
-                                                        </strong>{" "}
-                                                        <span
-                                                          style={{
-                                                            color: "#777",
-                                                          }}
-                                                        >
-                                                          {address.city}
-                                                        </span>
-                                                      </li>
-                                                    </ul>
-                                                  </div>
-                                                </Col>
-                                              </Row>
 
-                                              <div>
-                                                <a
-                                                  style={{
-                                                    fontSize: "30px",
-                                                    color: "#5caf90",
-                                                    position: "absolute",
-                                                    top: "0",
-                                                    right: "10px",
-                                                  }}
-                                                  onClick={() =>
-                                                    handleRemoveAddress(index)
-                                                  }
-                                                  href="#/"
-                                                  className="remove"
-                                                >
-                                                  ×
-                                                </a>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </li>
-                                      ))}
-                                    </ul>
+                            {billingMethod === "use" && addresses.length > 0 && (
+                              <div className="gi-checkout-block gi-check-bill">
+                                <div className="gi-sidebar-block">
+                                  <div className="gi-sb-title">
+                                    <h3 className="gi-sidebar-title">Address</h3>
                                   </div>
-                                </>
-                              )}
+                                  <div className="gi-sb-block-content">
+                                    {selectedAddress === null && (
+                                      <div className="gi-pay-desc" style={{ marginBottom: "15px" }}>
+                                        Please select the preferred Address to use on this order.
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <ul>
+                                  {addresses.map((address) => (
+                                    <li key={address._id}>
+                                      <div className="bill-box m-b-30" style={{ padding: "10px", position: "relative" }}>
+                                        {/* Checkbox */}
+                                        <div style={{ position: "absolute", top: "10px", left: "10px" }} className="checkboxes__item">
+                                          <label className="checkbox style-c">
+                                            <input
+                                              type="checkbox"
+                                              checked={selectedAddress?._id === address._id}
+                                              onChange={() => handleSelectAddress(address)}
+                                            />
+                                            <div className="checkbox__checkmark"></div>
+                                            <div className="checkbox__body"></div>
+                                          </label>
+                                        </div>
+
+                                        {/* Address details */}
+                                        <Row style={{ padding: "0 30px" }}>
+                                          <Col lg={6} md={6} sm={12} style={{ lineHeight: "25px" }}>
+                                            <ul className="gi-single-list">
+
+                                              <li>
+                                                <strong className="gi-check-subtitle">Street :</strong>{" "}
+                                                <span style={{ color: "#777" }}>{address.street}</span>
+                                              </li>
+                                              <li>
+                                                <strong className="gi-check-subtitle">details :</strong>{" "}
+                                                <span style={{ color: "#777" }}>{address.details}</span>
+                                              </li>
+                                              <li>
+                                                <strong className="gi-check-subtitle">Postal Code :</strong>{" "}
+                                                <span style={{ color: "#777" }}>{address.postalCode}</span>
+                                              </li>
+                                              <li>
+                                                <strong className="gi-check-subtitle">Phone :</strong>{" "}
+                                                <span style={{ color: "#777" }}>{address.phone}</span>
+                                              </li>
+                                            </ul>
+                                          </Col>
+
+                                          <Col lg={6} md={6} sm={12} style={{ lineHeight: "25px" }}>
+                                            <ul className="gi-single-list">
+                                              <li>
+                                                <strong className="gi-check-subtitle">Country :</strong>{" "}
+                                                <span style={{ color: "#777" }}>{address.country}</span>
+                                              </li>
+
+                                              <li>
+                                                <strong className="gi-check-subtitle">City :</strong>{" "}
+                                                <span style={{ color: "#777" }}>{address.city}</span>
+                                              </li>
+                                            </ul>
+                                          </Col>
+                                        </Row>
+
+                                        {/* Remove Button */}
+                                        <a
+                                          onClick={() => handleDelete(address._id)}
+                                          href="#/"
+                                          className="remove"
+                                          style={{
+                                            fontSize: "30px",
+                                            color: "#5caf90",
+                                            position: "absolute",
+                                            top: "0",
+                                            right: "10px",
+                                          }}
+                                        >
+                                          ×
+                                        </a>
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
                           </div>
                         </div>
                       </div>
@@ -1332,7 +1244,7 @@ const CheckOut = ({
                     {btnVisible ||
                       (!btnVisible === billingVisible && (
                         <span className="gi-check-order-btn">
-                          <a onClick={handleCheckout} className="gi-btn-2">
+                          <a onClick={handleCreateOrder} className="gi-btn-2">
                             Place Order
                           </a>
                         </span>
@@ -1345,7 +1257,7 @@ const CheckOut = ({
           )}
         </div>
       </section>
-      {cartItems.length !== 0 ? (
+      {mappedItems.length !== 0 ? (
         <section className="gi-new-product padding-tb-40">
           <div className="container">
             <Row className="overflow-hidden m-b-minus-24px">

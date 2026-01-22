@@ -8,11 +8,13 @@ import { useRouter } from "next/navigation";
 import { RootState } from "@/store";
 import { logout, setUserData } from "@/store/reducers/registrationSlice";
 import { setSearchTerm } from "@/store/reducers/filterReducer";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { getWishlist } from "@/store/reducers/wishList/wishlistSlice";
+import { CartItem, getCart } from "@/store/reducers/cart/cartSlice";
 
 function HeaderTwo({ cartItems, wishlistItems }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
   const router = useRouter();
   const isAuthenticated = useSelector(
     (state: RootState) => state.registration.isAuthenticated
@@ -54,7 +56,28 @@ function HeaderTwo({ cartItems, wishlistItems }) {
 const token = localStorage.getItem("token");
 
 
+  const { products, loading } = useSelector(
+    (state: RootState) => state.wishlistRealData
+  );
 
+  useEffect(() => {
+    dispatch(getWishlist());
+  }, [dispatch]);
+    const cart = useSelector((state: RootState) => state.cartRealData) as {
+      items: CartItem[];
+      page: number;
+      limit: number;
+      totalPages: number;
+      totalItems: number;
+      loading: boolean;
+      error: string | null;
+    };
+    const { items, error, totalItems } = cart;
+  
+    // عند تحميل الـ Component، جلب العربة
+    useEffect(() => {
+      dispatch(getCart({ page: 1, limit: 10 }));
+    }, [dispatch]);
   return (
     <>
       <div className="gi-header-bottom d-lg-block">
@@ -177,7 +200,7 @@ const token = localStorage.getItem("token");
                       <span className="gi-btn-title">Wishlist</span>
                       <span className="gi-btn-stitle">
                         <b className="gi-wishlist-count">
-                          {wishlistItems.length}
+                          {products?.length}
                         </b>
                         -items
                       </span>
@@ -200,7 +223,7 @@ const token = localStorage.getItem("token");
                     <div className="gi-btn-desc">
                       <span className="gi-btn-title">Cart</span>
                       <span className="gi-btn-stitle">
-                        <b className="gi-cart-count">{cartItems.length}</b>
+                        <b className="gi-cart-count">{totalItems}</b>
                         -items
                       </span>
                     </div>

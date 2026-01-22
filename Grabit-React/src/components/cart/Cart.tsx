@@ -12,6 +12,10 @@ import Spinner from "../button/Spinner";
 import DiscountCoupon from "../discount-coupon/DiscountCoupon";
 import QuantitySelector from "../quantity-selector/QuantitySelector";
 import Link from "next/link";
+import { useAppDispatch } from "@/store/hooks";
+import { mapProductToItem } from "@/utility/Functions";
+import { CartItem, removeFromCart } from "@/store/reducers/cart/cartSlice";
+import { applyCoupon } from "@/store/reducers/coupon/couponSlice";
 
 interface Country {
   id: string;
@@ -26,18 +30,40 @@ interface State {
 }
 
 const Cart = ({
-  onSuccess = () => {},
+  onSuccess = () => { },
   hasPaginate = false,
-  onError = () => {},
+  onError = () => { },
 }) => {
+  const dispatch = useAppDispatch();
+
   const cartItems = useSelector((state: RootState) => state.cart.items);
-  const dispatch = useDispatch();
+  const cart = useSelector((state: RootState) => state.cartRealData);
+  const { error: couponError, totalDiscount } = useSelector((state: RootState) => state.coupon);
+
+  const { items } = cart;
+  const [mappedItems, setMappedItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!items || items.length === 0) {
+      setMappedItems([]);
+      return;
+    }
+
+    const mapped = items.map((item: CartItem) => ({
+      ...mapProductToItem(item.product),
+      quantity: item.quantity,
+    }));
+
+    setMappedItems(mapped);
+  }, [items]);
+
   const [filteredCountryData, setFilteredCountryData] = useState<Country[]>([]);
   const [filteredStateData, setFilteredStateData] = useState<State[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
   const [subTotal, setSubTotal] = useState(0);
   const [vat, setVat] = useState(0);
   const [discount, setDiscount] = useState(0);
+  const [couponCode, setCouponCode] = useState("");
 
   const { data: country } = useSWR("/api/country", fetcher, {
     onSuccess,
@@ -77,36 +103,77 @@ const Cart = ({
     const stateName = options[selectedIndex].text;
   };
 
-  useEffect(() => {
-    if (cartItems.length === 0) {
-      setSubTotal(0);
-      setVat(0);
-      return;
-    }
 
-    const subtotal = cartItems.reduce(
-      (acc, item) => acc + item.newPrice * item.quantity,
+  useEffect(() => {
+    const subtotal = items.reduce(
+      (acc, item) => acc + item.product.price * item.quantity,
+      0
+    );
+
+    const totalDiscount = items.reduce(
+      (acc, item) => acc + (item.discountAmount || 0),
+      0
+    );
+
+    setSubTotal(subtotal - totalDiscount);
+  }, [items]);
+
+
+
+
+
+  // تحديث حساب Sub-Total بدون خصم كل عنصر
+  useEffect(() => {
+    const subtotal = items.reduce(
+      (acc, item) => acc + item.product.price * item.quantity,
       0
     );
     setSubTotal(subtotal);
-    // Calculate VAT
-    const vatAmount = subtotal * 0.2;
-    setVat(vatAmount);
-  }, [cartItems]);
+  }, [items]);
+
+
 
   const handleDiscountApplied = (discount) => {
     setDiscount(discount);
   };
 
-  const discountAmount = subTotal * (discount / 100);
-  const total = subTotal + vat - discountAmount;
 
   const handleRemoveFromCart = (item: any) => {
     dispatch(removeItem(item.id));
   };
 
   const { data, error } = useSWR("/api/deal", fetcher, { onSuccess, onError });
+  const handleRemoveItem = (productId: string) => {
+    dispatch(removeFromCart(productId));
+  };
 
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) return;
+    dispatch(applyCoupon(couponCode));
+  };
+  useEffect(() => {
+    if (!items || items.length === 0) {
+      setSubTotal(0);
+      setVat(0);
+      return;
+    }
+
+    const subtotal = items.reduce(
+      (acc, item) => acc + item.product.price * item.quantity,
+      0
+    );
+
+    setSubTotal(subtotal);
+
+    // توصيل ثابت
+    setVat(50);
+  }, [items]);
+
+  const total =
+    subTotal -
+    (totalDiscount || 0) +
+    vat;
   if (error) return <div>Failed to load products</div>;
   if (!data)
     return (
@@ -125,7 +192,7 @@ const Cart = ({
       <section className="gi-cart-section padding-tb-40">
         <h2 className="d-none">Cart Page</h2>
         <div className="container">
-          {cartItems.length === 0 ? (
+          {mappedItems.length === 0 ? (
             <div
               style={{
                 textAlign: "center",
@@ -291,7 +358,7 @@ const Cart = ({
                               </tr>
                             </thead>
                             <tbody>
-                              {cartItems.map((item: any, index: number) => (
+                              {mappedItems.map((item: any, index: number) => (
                                 <tr key={index}>
                                   <td
                                     data-label="Product"

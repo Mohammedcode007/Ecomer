@@ -1,13 +1,15 @@
+import axios from '@/utility/axios'
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
-import axios from 'src/utils/axios'
 
 /* ================== Types ================== */
 
-export type OrderStatus =
-  | 'pending'
-  | 'processing'
-  | 'completed'
-  | 'cancelled'
+type OrderStatus =
+  | "pending"
+  | "processing"
+  | "inway"
+  | "completed"
+  | "cancelled";
+
 
 export type PaymentStatus = 'pending' | 'paid'
 

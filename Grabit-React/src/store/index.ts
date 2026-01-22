@@ -14,7 +14,16 @@ import themeSlice from "./reducers/themeSlice";
 import categoriesReducer from "./reducers/categories/categoriesSlice";
 import productsReducer from "./reducers/products/productsSlice"; // مسار المنتجات
 import homepageReducer from "./reducers/homepage/homepageSlice";
+import couponReducer from "./reducers/coupon/couponSlice";
+import addressReducer from "./reducers/address/addressSlice";
+
+import ordersReducer from "./reducers/orders/ordersSlice";
+
+
+
 import authReducer from "./reducers/auth/authSlice"; // ← مسار authSlice.ts الصحيح
+import wishlistSliceRealData from "./reducers/wishList/wishlistSlice";
+import wcartSliceRealData from "./reducers/cart/cartSlice";
 
 // Configure persist for each slice separately
 const persistConfigCart = { key: "cart", storage };
@@ -55,12 +64,15 @@ const rootReducer = combineReducers({
   step: persistedStepReducer,
   filter: persistedFilterReducer,
   theme: persistedThemeReducer,
-    categories: categoriesReducer,
-      auth: authReducer, // ← إضافة authSlice هنا
-
-      homepage: homepageReducer, // ← إضافة الصفحة الرئيسية
-
-      products: productsReducer, // ← إضافة منتجات
+  categories: categoriesReducer,
+  auth: authReducer, // ← إضافة authSlice هنا
+  homepage: homepageReducer, // ← إضافة الصفحة الرئيسية
+  wishlistRealData: wishlistSliceRealData,
+  products: productsReducer, // ← إضافة منتجات
+    cartRealData: wcartSliceRealData,
+    coupon:couponReducer,
+        address:addressReducer,
+        orders:ordersReducer
 
 
 });

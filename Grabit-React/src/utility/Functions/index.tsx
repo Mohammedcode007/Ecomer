@@ -14,6 +14,8 @@ interface Item {
   sku: number;
   category: string;
   quantity: number;
+    sizes?: { size: string; stock: number; _id: string }[]; // ← الحجم اختياري
+
 }
 
 
@@ -37,6 +39,8 @@ export function mapProductToItem(product: any): Item {
     brand: "",          // لا يوجد حقل brand في المنتج الأصلي
     sku: product._id,
     category: product.category?.name || "",
-    quantity: product.stockQuantity
+    quantity: product.stockQuantity,
+    sizes: product.sizes?.length ? product.sizes : undefined, // ← إضافة الحجم الاختياري
+
   };
 }

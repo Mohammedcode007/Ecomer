@@ -18,6 +18,7 @@ app.use("/api", require("./routes/review.routes"));
 app.use("/api/addresses", require("./routes/address.routes"));
 app.use("/api/orders", require("./routes/order.routes"));
 app.use("/api/home", require("./routes/home.routes"));
+app.use("/api/coupon", require("./routes/coupon.routes"));
 
 // Error Middleware (آخر شيء)
 app.use(errorHandler);

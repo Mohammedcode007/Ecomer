@@ -11,6 +11,10 @@ import useSWR from "swr";
 import fetcher from "../fetcher-api/Fetcher";
 import Spinner from "../button/Spinner";
 import { removeWishlist } from "@/store/reducers/wishlistSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { getWishlist, toggleWishlist } from "@/store/reducers/wishList/wishlistSlice";
+import { mapProductToItem } from "@/utility/Functions";
+import { fetchProductsByStatus } from "@/store/reducers/products/productsSlice";
 
 interface Item {
   id: number;
@@ -31,13 +35,20 @@ interface Item {
 }
 
 const Wishlist = ({
-  onSuccess = () => {},
+  onSuccess = () => { },
   hasPaginate = false,
-  onError = () => {},
+  onError = () => { },
 }) => {
-  const wishlistItems = useSelector(
-    (state: RootState) => state.wishlist.wishlist
+  const dispatch = useAppDispatch();
+
+  const { products, loading } = useSelector(
+    (state: RootState) => state.wishlistRealData
   );
+
+  useEffect(() => {
+    dispatch(getWishlist({ page: 1, limit: 10 }));
+  }, [dispatch]);
+
   const [currentDate, setCurrentDate] = useState(
     new Date().toLocaleDateString("en-GB")
   );
@@ -46,7 +57,6 @@ const Wishlist = ({
     setCurrentDate(new Date().toLocaleDateString("en-GB"));
   }, []);
 
-  const dispatch = useDispatch();
 
   const handleRemoveFromwishlist = (id: number) => {
     dispatch(removeWishlist(id));
@@ -59,17 +69,41 @@ const Wishlist = ({
   const { data, error } = useSWR("/api/deal", fetcher, { onSuccess, onError });
 
   if (error) return <div>Failed to load products</div>;
-  if (!data)
+  if (!products)
     return (
       <div>
         <Spinner />
       </div>
     );
 
-  const getData = () => {
-    if (hasPaginate) return data.data;
-    else return data;
+
+
+
+  const handleToggleWishlist = (productId: string) => {
+
+    dispatch(toggleWishlist({ productId }));
   };
+  const { newArrivals } = useAppSelector(state => state.products.statusProducts);
+
+  const [selected, setSelected] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await dispatch(
+          fetchProductsByStatus({ type: "newArrivals", page: 1, limit: 10 })
+        ).unwrap();
+        onSuccess();
+      } catch (err) {
+      } finally {
+      }
+    };
+
+    fetchData();
+  }, [dispatch,]);
+
+  const newData = newArrivals?.products || [];
+
 
   return (
     <>
@@ -81,7 +115,7 @@ const Wishlist = ({
             </h2>
             <p>Your product wish is our first priority.</p>
           </div>
-          {wishlistItems.length === 0 ? (
+          {products.length === 0 ? (
             <h4 className="text-center">Your wishlist is empty.</h4>
           ) : (
             <Row>
@@ -110,59 +144,66 @@ const Wishlist = ({
                           </tr>
                         </thead>
                         <tbody className="wish-empt">
-                          {wishlistItems.map((data, index) => (
-                            <tr key={index} className="pro-gl-content">
-                              <td scope="row">
-                                <span>{index + 1}</span>
-                              </td>
-                              <td>
-                                <img
-                                  className="prod-img"
-                                  src={data.image}
-                                  alt="product image"
-                                />
-                              </td>
-                              <td>
-                                <span>{data.title}</span>
-                              </td>
-                              <td>
-                                <span>{currentDate}</span>
-                              </td>
-                              <td>
-                                <span>${data.newPrice}</span>
-                              </td>
-                              <td>
-                                <span
-                                  className={
-                                    data.status === "Available" ? "avl" : "out"
-                                  }
-                                >
-                                  {data.status}
-                                </span>
-                              </td>
-                              <td>
-                                <span className="tbl-btn">
-                                  <a
-                                    className="gi-btn-2 add-to-cart"
-                                    title="Add To Cart"
-                                    onClick={() => handleCart(data)}
-                                  >
-                                    <i className="fi-rr-shopping-basket"></i>
-                                  </a>
-                                  <a
-                                    onClick={() =>
-                                      handleRemoveFromwishlist(data.id)
+                          {products.map((product, index) => {
+                            const data = mapProductToItem(product); // ← تحويل المنتج إلى Item
+
+                            return (
+                              <tr key={index} className="pro-gl-content">
+                                <td scope="row">
+                                  <span>{index + 1}</span>
+                                </td>
+                                <td>
+                                  {data.image && (
+                                    <img
+                                      className="prod-img"
+                                      src={data.image}
+                                      alt="product image"
+                                    />
+                                  )}
+
+                                </td>
+                                <td>
+                                  <span>{data.title}</span>
+                                </td>
+                                <td>
+                                  <span>{currentDate}</span>
+                                </td>
+                                <td>
+                                  <span>${data.newPrice}</span>
+                                </td>
+                                <td>
+                                  <span
+                                    className={
+                                      data.status === "Available" ? "avl" : "out"
                                     }
-                                    className="gi-btn-1 gi-remove-wish btn"
-                                    href="#"
-                                    title="Remove From List"
                                   >
-                                    ×
-                                  </a>
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+                                    {data.status}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span className="tbl-btn">
+                                    <a
+                                      className="gi-btn-2 add-to-cart"
+                                      title="Add To Cart"
+                                      onClick={() => handleCart(data)}
+                                    >
+                                      <i className="fi-rr-shopping-basket"></i>
+                                    </a>
+                                    <a
+                                      onClick={() => handleToggleWishlist(data.id.toString())}
+
+                                      className="gi-btn-1 gi-remove-wish btn"
+                                      href="#"
+                                      title="Remove From List"
+                                    >
+                                      ×
+                                    </a>
+                                  </span>
+                                </td>
+                              </tr>
+                            )
+                          })}
+
                         </tbody>
                       </table>
                     </div>
@@ -229,11 +270,11 @@ const Wishlist = ({
                     }}
                     className="deal-slick-carousel gi-product-slider"
                   >
-                    {/* {getData().map((item: any, index: number) => (
+                    {newData.map((item: any, index: number) => (
                       <SwiperSlide key={index}>
-                        <ItemCard data={item} />
+                        <ItemCard data={mapProductToItem(item)} />
                       </SwiperSlide>
-                    ))} */}
+                    ))}
                   </Swiper>
                 </Fade>
               </div>
